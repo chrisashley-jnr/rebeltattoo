@@ -44,7 +44,7 @@ export function Header() {
             </SiteLink>
           ))}
         </nav>
-        <ButtonLink className="site-header__cta" to="/contact">Book a consultation</ButtonLink>
+        <ButtonLink className="site-header__cta" to="/booking">Book a home session</ButtonLink>
         <button className="menu-toggle" type="button" aria-expanded={open} aria-controls="mobile-menu" aria-label={open ? "Close navigation" : "Open navigation"} onClick={() => setOpen((value) => !value)}>
           <span>{open ? "Close" : "Menu"}</span>
           {open ? <X size={18} weight="bold" /> : <Plus size={18} weight="bold" />}
@@ -56,7 +56,7 @@ export function Header() {
             <SiteLink key={item.path} to={item.path} className={path === item.path ? "is-active" : ""} aria-current={path === item.path ? "page" : undefined}>{item.label}</SiteLink>
           ))}
         </nav>
-        <ButtonLink to="/contact">Book a consultation</ButtonLink>
+        <ButtonLink to="/booking">Book a home session</ButtonLink>
       </div>
     </header>
   );
@@ -74,7 +74,7 @@ export function Footer() {
           <nav className="site-footer__nav" aria-label="Footer navigation">
             {navItems.map((item) => <SiteLink key={item.path} to={item.path}>{item.label}</SiteLink>)}
           </nav>
-          <p className="site-footer__meta">By appointment · Replies in 2–3 business days</p>
+          <p className="site-footer__meta">Home service only · By appointment · Replies in 2–3 business days</p>
         </div>
       </div>
       <div className="container site-footer__bottom">© Rebel Tattoos</div>
@@ -101,9 +101,9 @@ export function BookingCTA({ title = "Let’s make something personal." }) {
         <div className="booking-cta__copy">
           <p className="eyebrow eyebrow--light">Your idea, your ink</p>
           <h2 id="booking-cta-title">{title}</h2>
-          <p>Tell us what you’re imagining. We’ll reply with timing, pricing, and the best next step.</p>
+          <p>Tell us what you’re imagining. Michelle will reply with timing, pricing, and home session availability.</p>
         </div>
-        <ButtonLink variant="paper" to="/contact">Book a consultation</ButtonLink>
+        <ButtonLink variant="paper" to="/booking">Book a home session</ButtonLink>
       </div>
     </section>
   );

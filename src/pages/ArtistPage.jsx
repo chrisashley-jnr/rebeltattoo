@@ -37,7 +37,7 @@ export function ArtistPage() {
             <figure className="artist-hero__portrait">
               <img
                 src={images.hero}
-                alt="Michelle in her bright tattoo studio, showing a botanical upper-arm tattoo"
+                alt="Michelle, fine-line tattoo artist showing a botanical upper-arm piece"
                 width="1586"
                 height="992"
                 fetchPriority="high"
@@ -55,10 +55,10 @@ export function ArtistPage() {
                 Fine-line tattooing with softness, movement, and meaning.
               </p>
               <p className="artist-hero__description">
-                Michelle creates custom tattoos inspired by nature, memory, and the small details people carry with them.
+                Michelle creates original fine-line tattoos inspired by nature, memory, and the small details people carry with them.
               </p>
               <div className="artist-hero__actions" aria-label="Artist actions">
-                <ButtonLink to="/contact">Book with Michelle</ButtonLink>
+                <ButtonLink to="/booking">Book a home session</ButtonLink>
                 <ButtonLink to="/gallery" variant="outline">View her work</ButtonLink>
               </div>
             </div>
@@ -78,12 +78,12 @@ export function ArtistPage() {
                   Her approach is collaborative and unhurried, balancing delicate linework with designs that sit naturally on the body.
                 </p>
                 <p>
-                  Every appointment is designed to feel calm, welcoming, and considered—from the first conversation to aftercare.
+                  Every home appointment is designed to feel calm, welcoming, and unhurried in your own space—from the first conversation to aftercare.
                 </p>
               </div>
 
               <p className="artist-story__mobile-copy">
-                Michelle creates custom tattoos inspired by nature, memory, and the small details people carry with them. Her approach is collaborative and unhurried, balancing delicate linework with designs that sit naturally on the body.
+                Michelle creates original fine-line tattoos inspired by nature, memory, and the small details people carry with them. Her approach is collaborative and unhurried, balancing delicate linework with designs that sit naturally on the body.
               </p>
             </div>
 
@@ -91,7 +91,7 @@ export function ArtistPage() {
               <figure className="artist-story__studio">
                 <img
                   src={images.studio}
-                  alt="Michelle's calm, light-filled tattoo studio"
+                  alt="Michelle's sterile setup and equipment for private home sessions"
                   width="1586"
                   height="992"
                   loading="lazy"
@@ -101,7 +101,7 @@ export function ArtistPage() {
               <div className="artist-story__practice">
                 <p className="artist-story__specialties">
                   <strong>Specialties</strong>
-                  <span>Fine line · Botanical · Celestial · Ornamental · Small-scale custom work</span>
+                  <span>Fine line · Botanical · Celestial · Ornamental · Small-scale linework</span>
                 </p>
 
                 <div className="artist-principles" aria-label="Michelle's approach">

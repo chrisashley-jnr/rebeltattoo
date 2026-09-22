@@ -1,8 +1,9 @@
 export const navItems = [
   { label: "Home", path: "/" },
   { label: "Gallery", path: "/gallery" },
-  { label: "FAQ", path: "/faq" },
+  { label: "Booking", path: "/booking" },
   { label: "Artist", path: "/artist" },
+  { label: "FAQ", path: "/faq" },
   { label: "Contact", path: "/contact" },
 ];
 
@@ -25,10 +26,10 @@ export const portfolioItems = [
 ];
 
 export const faqs = [
-  { question: "How do I book?", answer: "Complete the booking form with your idea, placement, approximate size, and reference images. You’ll receive availability and next steps by email." },
-  { question: "Do you accept walk-ins?", answer: "The studio is appointment-only so every session has enough time, privacy, and preparation." },
-  { question: "How much will my tattoo cost?", answer: "Pricing depends on size, placement, detail, and session length. You’ll receive a clear estimate before confirming." },
-  { question: "Can I bring reference images?", answer: "Absolutely. References help communicate mood and direction; your final tattoo will be drawn as an original piece." },
-  { question: "How should I prepare?", answer: "Eat a full meal, stay hydrated, wear comfortable clothing, and avoid alcohol for 24 hours before your appointment." },
-  { question: "What if I need to reschedule?", answer: "Please give at least 48 hours’ notice. Deposits secure your appointment and are applied to the final total." },
+  { question: "How do I book a home session?", answer: "Complete the booking form with your idea, placement, approximate size, and location in Accra. Michelle will reply with availability, pricing, and home session logistics." },
+  { question: "Where do sessions take place?", answer: "Rebel Tattoos is exclusively a home service. Michelle travels directly to your home across Accra with all professional sterilized equipment, a portable ergonomic bed, medical-grade hygiene supplies, and lighting. There are no studio visits or walk-ins." },
+  { question: "How should I prepare my space at home?", answer: "Choose a clean, comfortable, and well-lit area with enough room for a portable massage bed. Michelle brings protective surface coverings, sanitized tools, and everything required for a safe, medical-grade home session." },
+  { question: "How much will my tattoo cost?", answer: "Pricing depends on size, placement, linework complexity, and session length. You’ll receive a clear upfront estimate before confirming your booking." },
+  { question: "Can I bring reference images?", answer: "Absolutely. References help communicate mood and direction; your final tattoo will be drawn as an original piece drawn specifically for you." },
+  { question: "What if I need to reschedule?", answer: "Please give at least 48 hours’ notice. Deposits secure your home appointment time and are applied to the final total." },
 ];

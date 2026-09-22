@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { NavigationProvider } from "./navigation.jsx";
 import { LandingPage } from "./pages/LandingPage.jsx";
 import { GalleryPage } from "./pages/GalleryPage.jsx";
+import { BookingPage } from "./pages/BookingPage.jsx";
 import { FaqPage } from "./pages/FaqPage.jsx";
 import { ContactPage } from "./pages/ContactPage.jsx";
 import { ArtistPage } from "./pages/ArtistPage.jsx";
@@ -10,6 +11,7 @@ import { AdminPage } from "./pages/AdminPage.jsx";
 const routes = {
   "/": LandingPage,
   "/gallery": GalleryPage,
+  "/booking": BookingPage,
   "/faq": FaqPage,
   "/contact": ContactPage,
   "/artist": ArtistPage,
@@ -17,10 +19,11 @@ const routes = {
 };
 
 const routeTitles = {
-  "/": "Rebel Tattoos — Fine-line tattoo studio",
+  "/": "Rebel Tattoos — Fine-line tattoos · Home service only",
   "/gallery": "Gallery — Rebel Tattoos",
+  "/booking": "Book a home session — Rebel Tattoos",
   "/faq": "FAQ — Rebel Tattoos",
-  "/contact": "Book a consultation — Rebel Tattoos",
+  "/contact": "Contact & Enquiries — Rebel Tattoos",
   "/artist": "Meet Michelle — Rebel Tattoos",
   "/admin": "Bookings dashboard — Rebel Tattoos",
 };

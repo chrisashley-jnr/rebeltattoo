@@ -511,7 +511,7 @@ export function AdminPage() {
         <div className="admin-container admin-topbar__inner">
           <a className="admin-brand" href="/" aria-label="Rebel Tattoos home">
             <span className="admin-brand__images"><img src="/assets/logo-mark.png" alt="" /><img src="/assets/logo-word.png" alt="" /></span>
-            <span className="admin-brand__label">Studio admin</span>
+            <span className="admin-brand__label">Admin dashboard</span>
           </a>
           <div className="admin-topbar__actions">
             <a className="admin-button admin-button--quiet admin-topbar__site-link" href="/">View site<ArrowSquareOut size={17} aria-hidden="true" /></a>
@@ -694,7 +694,7 @@ export function AdminPage() {
                   </div>
                   {attachments.length ? (
                     <>
-                      <p className="admin-private-note"><LockKey size={14} />Private links. Do not forward outside the studio.</p>
+                      <p className="admin-private-note"><LockKey size={14} />Private links. Keep within authorized admin.</p>
                       <ul className="admin-attachment-list">
                         {attachments.map((attachment, index) => <AttachmentLink key={attachment?.id ?? attachment?.name ?? index} booking={selectedBooking} attachment={attachment} />)}
                       </ul>
@@ -703,7 +703,7 @@ export function AdminPage() {
                 </section>
 
                 <form className="admin-detail-section admin-update-form" onSubmit={handleSave}>
-                  <h3>Studio update</h3>
+                  <h3>Booking update</h3>
                   <label htmlFor="admin-booking-status">Status</label>
                   <span className="admin-select-wrap admin-select-wrap--full">
                     <select id="admin-booking-status" value={statusDraft} onChange={(event) => { setStatusDraft(event.target.value); setSaveState({ loading: false, message: "", error: "" }); }}>
@@ -740,8 +740,8 @@ export function AdminPage() {
                   </fieldset>
                   <p className="admin-email-recipient">
                     {emailAudience === "booker" && <>To: {bookerEmail || "No booker email available"}</>}
-                    {emailAudience === "admin" && <>To: {session.adminEmail || "Studio admin"}</>}
-                    {emailAudience === "both" && <>To: {bookerEmail || "Booker email missing"} and {session.adminEmail || "Studio admin"}</>}
+                    {emailAudience === "admin" && <>To: {session.adminEmail || "Admin"}</>}
+                    {emailAudience === "both" && <>To: {bookerEmail || "Booker email missing"} and {session.adminEmail || "Admin"}</>}
                   </p>
                   {session.emailConfigured === false && (
                     <p className="admin-email-warning" role="status">

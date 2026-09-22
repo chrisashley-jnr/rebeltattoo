@@ -126,7 +126,7 @@ export function GalleryPage() {
               <h1 id="gallery-heading">Recent work,<br />made one at a time.</h1>
             </div>
             <p className="gallery-hero__lede">
-              A collection of custom pieces across fine-line, botanical, celestial, and ornamental styles.
+              A collection of original fine-line pieces across botanical, celestial, and ornamental styles.
             </p>
             <div className="gallery-filters" role="group" aria-label="Filter portfolio by style">
               {filters.map((filter) => (
@@ -164,12 +164,12 @@ export function GalleryPage() {
               ))}
             </div>
 
-            <aside className="gallery-originality" aria-label="Custom design note">
+            <aside className="gallery-originality" aria-label="Original design note">
               <p>
                 See something that feels like you? Bring the feeling—not a copy.<br />
                 Your design will be original.
               </p>
-              <ButtonLink to="/contact">Book a consultation</ButtonLink>
+              <ButtonLink to="/booking">Book a home session</ButtonLink>
             </aside>
           </div>
         </section>

@@ -179,7 +179,7 @@ export function renderBookingConfirmationEmail(booking, env) {
   return emailFrame({
     preheader: `We received your Rebel Tattoos request ${booking.reference}.`,
     title: "Your idea is in.",
-    intro: "Your booking request reached the studio safely. Keep this email for your reference while the details are reviewed.",
+    intro: "Your booking request reached Michelle safely. Keep this email for your reference while the details are reviewed.",
     content,
     cta: galleryUrl ? { label: "Explore the gallery", url: galleryUrl } : null,
     footerNote: "Reply to this email if you need to add a small detail before your request is reviewed.",
@@ -202,10 +202,10 @@ export function renderAdminBookingEmail(booking, env) {
   return emailFrame({
     preheader: `New booking ${booking.reference} from ${booking.fullName}.`,
     title: "New booking request.",
-    intro: "A new request is ready for studio review.",
+    intro: "A new home service request is ready for review.",
     content,
     cta: adminUrl ? { label: "Review the booking", url: adminUrl } : null,
-    footerNote: "Private studio notification — keep booking details inside the protected dashboard.",
+    footerNote: "Private booking notification — keep booking details inside the protected dashboard.",
   });
 }
 
@@ -225,14 +225,14 @@ export function renderManualEmail({ booking, audience, subject, body, env }) {
   return emailFrame({
     preheader: shorten(body, 110),
     title: shorten(subject, 180),
-    intro: isBooker ? "A note from Michelle at Rebel Tattoos." : "A studio copy of this booking message.",
+    intro: isBooker ? "A note from Michelle at Rebel Tattoos." : "A copy of this booking message.",
     content,
     cta: destinationUrl ? {
       label: isBooker ? "Visit Rebel Tattoos" : "Open the booking",
       url: destinationUrl,
     } : null,
     footerNote: isBooker
-      ? "Reply to this email to continue the conversation with the studio."
-      : "Private studio copy for the booking record.",
+      ? "Reply to this email to continue the conversation with Michelle."
+      : "Private copy for the booking record.",
   });
 }

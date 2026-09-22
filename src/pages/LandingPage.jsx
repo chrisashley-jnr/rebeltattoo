@@ -38,22 +38,22 @@ export function LandingPage() {
           <div className="home-hero__copy">
             <h1 id="home-title" className="display">Fine lines.<br />Lasting stories.</h1>
             <p className="home-hero__intro">
-              Thoughtful, custom tattoos created with care. From the first idea to the final healed piece.
+              Thoughtful, original fine-line tattoos created with care. Private home service brought directly to you in Accra.
             </p>
             <div className="home-hero__actions">
-              <ButtonLink to="/contact">Book a consultation</ButtonLink>
+              <ButtonLink to="/booking">Book a home session</ButtonLink>
               <ButtonLink to="/gallery" variant="outline">Explore the gallery</ButtonLink>
             </div>
           </div>
 
           <div className="home-hero__visual">
-            <img src={images.hero} alt="Tattoo artist seated in her sunlit studio" />
+            <img src={images.hero} alt="Michelle, fine-line tattoo artist preparing for home sessions" />
             <div className="home-hero__stamp" aria-hidden="true">
-              <span>Custom · calm · considered</span>
+              <span>Home service · calm · considered</span>
             </div>
           </div>
         </div>
-        <div className="home-hero__mobile-note">Custom. Considered. Completely yours.</div>
+        <div className="home-hero__mobile-note">Home service. Considered. Completely yours.</div>
       </section>
 
       <section id="featured-work" className="featured-work">

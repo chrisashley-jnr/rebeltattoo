@@ -90,7 +90,7 @@ export function FaqPage() {
                 <h2>Still unsure?</h2>
                 <p>Send a note and we’ll help you decide what comes next.</p>
               </div>
-              <ButtonLink to="/contact" variant="outline">Contact the studio</ButtonLink>
+              <ButtonLink to="/contact" variant="outline">Contact Michelle</ButtonLink>
             </aside>
           </div>
         </section>
