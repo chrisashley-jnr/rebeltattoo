@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Full landing page comparison</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 16px; color: #f7f3ea; background: #151617; font: 12px Arial, sans-serif; }
+      h1 { margin: 0 0 12px; font-size: 16px; }
+      main { display: grid; grid-template-columns: 360px 360px; gap: 18px; justify-content: center; align-items: start; }
+      h2 { margin: 0 0 6px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+      figure { margin: 0; }
+      img { display: block; width: 360px; height: auto; background: #fffdf8; }
+      .implementation { width: 360px; height: 858px; overflow: hidden; background: #fffdf8; }
+      iframe { display: block; width: 1440px; height: 3432px; border: 0; transform: scale(.25); transform-origin: top left; }
+    </style>
+  </head>
+  <body>
+    <h1>Full landing page — normalized overview</h1>
+    <main>
+      <figure>
+        <h2>Figma source</h2>
+        <img src="figma-landing-desktop-full.png" alt="Full Figma landing page" />
+      </figure>
+      <figure>
+        <h2>Browser implementation</h2>
+        <div class="implementation"><iframe src="http://localhost:4173/" title="Implemented landing page"></iframe></div>
+      </figure>
+    </main>
+  </body>
+</html>
