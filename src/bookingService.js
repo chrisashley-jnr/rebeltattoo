@@ -1,4 +1,6 @@
-export const isDemoMode = import.meta.env.DEV;
+// Set to false for live production mode with active API and Gmail SMTP delivery.
+// Set import.meta.env.VITE_DEMO_MODE === "true" if offline preview is needed.
+export const isDemoMode = import.meta.env.VITE_DEMO_MODE === "true";
 
 export const statusOptions = [
   { value: "all", label: "All bookings" },
