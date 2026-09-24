@@ -34,7 +34,7 @@ Clients browse the public site, submit a booking request with optional reference
 
 ## Brand Commitments
 
-Preserve the Rebel Tattoos name, supplied logo assets, real studio/tattoo imagery, appointment-only language, Barlow Condensed display voice, DM Sans body voice, and the shared rounded-corner/border system. The active gothic palette uses aged parchment, black-plum ink, oxblood, deep violet, antique gold, and pewter.
+Preserve the Rebel Tattoos name, supplied logo assets, real studio/tattoo imagery, appointment-only language, Barlow Condensed display voice, and DM Sans body voice. The active gothic palette uses charcoal, ivory, oxblood, muted rose, and warm pewter. Filled surfaces and spacing establish hierarchy without visible borders.
 
 ## Evidence on Hand
 

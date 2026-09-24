@@ -1,6 +1,6 @@
 // Set to false for live production mode with active API and Gmail SMTP delivery.
 // Set import.meta.env.VITE_DEMO_MODE === "true" if offline preview is needed.
-export const isDemoMode = import.meta.env.VITE_DEMO_MODE === "true";
+export const isDemoMode = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === "true";
 
 export const statusOptions = [
   { value: "all", label: "All bookings" },
@@ -153,6 +153,9 @@ async function apiRequest(path, options = {}) {
       ...options.headers,
     },
   });
+  if (!response.headers.get("Content-Type")?.toLowerCase().includes("application/json")) {
+    throw new Error("The booking service is unavailable. Please try again later.");
+  }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(payload.error || "Something went wrong. Please try again.");
@@ -163,7 +166,7 @@ async function apiRequest(path, options = {}) {
   return payload;
 }
 
-export async function submitBooking(values, files = []) {
+export async function submitBooking(values, files = [], idempotencyKey = crypto.randomUUID()) {
   if (isDemoMode) {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
@@ -216,12 +219,15 @@ export async function submitBooking(values, files = []) {
   const form = new FormData();
   for (const [name, value] of Object.entries(values)) form.set(name, value === true ? "true" : String(value ?? ""));
   for (const file of files) form.append("referenceImages", file, file.name);
-  const idempotencyKey = crypto.randomUUID();
-  return apiRequest("/api/bookings", {
+  const result = await apiRequest("/api/bookings", {
     method: "POST",
     body: form,
     headers: { "Idempotency-Key": idempotencyKey },
   });
+  if (!result.booking?.id || !result.booking?.reference) {
+    throw new Error("The booking service did not confirm your request. Please try again.");
+  }
+  return result;
 }
 
 export async function getAdminSession() {
@@ -237,7 +243,13 @@ export async function getAdminSession() {
       emailConfigured: false,
     };
   }
-  return apiRequest("/api/admin/session");
+  const session = await apiRequest("/api/admin/session");
+  if (session.authenticated !== true) {
+    const error = new Error("Sign in to access the booking dashboard.");
+    error.status = 401;
+    throw error;
+  }
+  return session;
 }
 
 export async function loginAdmin(password) {
@@ -250,7 +262,9 @@ export async function loginAdmin(password) {
     window.sessionStorage.setItem(DEMO_SESSION_KEY, "active");
     return { authenticated: true };
   }
-  return apiRequest("/api/admin/session", { method: "POST", body: JSON.stringify({ password }) });
+  const session = await apiRequest("/api/admin/session", { method: "POST", body: JSON.stringify({ password }) });
+  if (session.authenticated !== true) throw new Error("Sign-in was not confirmed. Please try again.");
+  return session;
 }
 
 export async function logoutAdmin() {

@@ -9,6 +9,8 @@ import {
 
 const SESSION_COOKIE = "rebel_admin_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 8;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const MAX_LOGIN_FAILURES = 5;
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_TOTAL_FILE_SIZE = 50 * 1024 * 1024;
@@ -21,6 +23,8 @@ function json(payload, status = 200, headers = {}) {
     headers: {
       "Cache-Control": "no-store",
       "Content-Type": "application/json; charset=utf-8",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer",
       ...headers,
     },
   });
@@ -36,7 +40,7 @@ function textValue(form, name, max = 2000) {
 }
 
 function parseCookies(header = "") {
-  return header.split(";").reduce((cookies, pair) => {
+  return String(header || "").split(";").reduce((cookies, pair) => {
     const separator = pair.indexOf("=");
     if (separator < 0) return cookies;
     const name = pair.slice(0, separator).trim();
@@ -85,9 +89,10 @@ async function equalSecrets(left, right) {
   return equalBytes(new Uint8Array(leftDigest), new Uint8Array(rightDigest));
 }
 
-async function createSessionToken(secret, nowMs) {
+async function createSessionToken(secret, nowMs, id) {
   const payload = bytesToBase64Url(encoder.encode(JSON.stringify({
-    version: 1,
+    version: 2,
+    id,
     expiresAt: nowMs + SESSION_TTL_SECONDS * 1000,
   })));
   const signature = bytesToBase64Url(await hmac(secret, payload));
@@ -95,28 +100,35 @@ async function createSessionToken(secret, nowMs) {
 }
 
 async function verifySessionToken(token, secret, nowMs) {
-  if (!token || !secret) return false;
+  if (!token || !secret) return null;
   const [payload, signature, extra] = token.split(".");
-  if (!payload || !signature || extra) return false;
+  if (!payload || !signature || extra) return null;
   let suppliedSignature;
   let session;
   try {
     suppliedSignature = base64UrlToBytes(signature);
     session = JSON.parse(new TextDecoder().decode(base64UrlToBytes(payload)));
   } catch {
-    return false;
+    return null;
   }
   const expectedSignature = await hmac(secret, payload);
   return (
     equalBytes(suppliedSignature, expectedSignature)
-    && session?.version === 1
+    && session?.version === 2
+    && typeof session.id === "string"
+    && session.id.length >= 20
     && Number.isFinite(session.expiresAt)
     && session.expiresAt > nowMs
-  );
+  ) ? session : null;
 }
 
 function sessionConfigurationReady(env) {
-  return Boolean(env.ADMIN_PASSWORD?.trim() && env.SESSION_SECRET?.trim());
+  return Boolean(env.ADMIN_PASSWORD?.trim().length >= 12 && env.SESSION_SECRET?.trim().length >= 32);
+}
+
+async function loginKey(request, secret) {
+  const address = request.headers.get("CF-Connecting-IP") || "unknown";
+  return bytesToBase64Url(await hmac(secret, `admin-login:${address}`));
 }
 
 function adminEmailReady(env) {
@@ -137,6 +149,7 @@ function expiredSessionCookie(request) {
 }
 
 function isSameOrigin(request) {
+  if (request.headers.get("Sec-Fetch-Site") === "cross-site") return false;
   const origin = request.headers.get("Origin");
   return !origin || origin === new URL(request.url).origin;
 }
@@ -144,7 +157,11 @@ function isSameOrigin(request) {
 async function readJson(request) {
   const contentLength = Number(request.headers.get("Content-Length") || 0);
   if (contentLength > 25_000) throw new Error("Request body is too large.");
-  return request.json();
+  const text = await request.text();
+  if (encoder.encode(text).length > 25_000) throw new Error("Request body is too large.");
+  const value = JSON.parse(text);
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Send a JSON object.");
+  return value;
 }
 
 function makeReference(now, id) {
@@ -192,6 +209,12 @@ function validateFiles(files) {
   return "";
 }
 
+async function hasValidImageSignature(file) {
+  const bytes = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+  if (file.type === "image/png") return bytes.length >= 8 && [137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => bytes[index] === byte);
+  return bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
+}
+
 function queueTask(context, task) {
   if (context?.waitUntil) {
     context.waitUntil(task);
@@ -202,6 +225,9 @@ function queueTask(context, task) {
 
 async function handleCreateBooking(request, env, context, dependencies) {
   if (!isSameOrigin(request)) return errorResponse("This request must come from the same site.", 403);
+  if (Number(request.headers.get("Content-Length") || 0) > MAX_TOTAL_FILE_SIZE + 100_000) {
+    return errorResponse("The booking request is too large.", 413);
+  }
   const store = dependencies.storeFactory(env);
   if (!store) return errorResponse("Booking storage is not configured yet.", 503);
 
@@ -221,6 +247,13 @@ async function handleCreateBooking(request, env, context, dependencies) {
   const files = form.getAll("referenceImages").filter((entry) => entry instanceof File && entry.size > 0);
   const fileError = validateFiles(files);
   if (fileError) return errorResponse(fileError, 422, { referenceImages: fileError });
+  for (const file of files) {
+    if (!(await hasValidImageSignature(file))) {
+      return errorResponse("Reference images must be valid JPG or PNG files.", 422, {
+        referenceImages: "Choose a valid JPG or PNG image.",
+      });
+    }
+  }
   if (files.length && !env.UPLOADS && !dependencies.allowFilesWithoutBinding) {
     return errorResponse("Reference-image storage is not configured yet.", 503);
   }
@@ -304,8 +337,13 @@ async function handleCreateBooking(request, env, context, dependencies) {
 async function requireAdmin(request, env, dependencies) {
   if (!sessionConfigurationReady(env)) return errorResponse("Admin access is not configured yet.", 503);
   const token = parseCookies(request.headers.get("Cookie"))[SESSION_COOKIE];
-  const valid = await verifySessionToken(token, env.SESSION_SECRET, dependencies.nowMs());
-  return valid ? null : errorResponse("Sign in to access the booking dashboard.", 401);
+  const session = await verifySessionToken(token, env.SESSION_SECRET, dependencies.nowMs());
+  if (!session) return errorResponse("Sign in to access the booking dashboard.", 401);
+  const store = dependencies.storeFactory(env);
+  if (!store) return errorResponse("Booking storage is not configured yet.", 503);
+  return await store.hasAdminSession(session.id, dependencies.nowMs())
+    ? null
+    : errorResponse("Sign in to access the booking dashboard.", 401);
 }
 
 async function handleSession(request, env, dependencies) {
@@ -321,12 +359,32 @@ async function handleSession(request, env, dependencies) {
     } catch {
       return errorResponse("Enter the admin password.", 400);
     }
-    if (!(await equalSecrets(body?.password, env.ADMIN_PASSWORD))) return errorResponse("That password is not correct.", 401);
-    const token = await createSessionToken(env.SESSION_SECRET, dependencies.nowMs());
+    const store = dependencies.storeFactory(env);
+    if (!store) return errorResponse("Booking storage is not configured yet.", 503);
+    await store.ready();
+    const key = await loginKey(request, env.SESSION_SECRET);
+    const nowMs = dependencies.nowMs();
+    if (await store.getLoginAttempts(key, nowMs) >= MAX_LOGIN_FAILURES) {
+      return json({ error: "Too many sign-in attempts. Try again in 15 minutes." }, 429, { "Retry-After": "900" });
+    }
+    if (!(await equalSecrets(body?.password, env.ADMIN_PASSWORD))) {
+      await store.recordLoginFailure(key, nowMs, LOGIN_WINDOW_MS);
+      return errorResponse("That password is not correct.", 401);
+    }
+    await store.clearLoginFailures(key);
+    const id = dependencies.randomUUID();
+    await store.createAdminSession(id, nowMs + SESSION_TTL_SECONDS * 1000, nowMs);
+    const token = await createSessionToken(env.SESSION_SECRET, nowMs, id);
     return json({ authenticated: true }, 200, { "Set-Cookie": sessionCookie(token, request) });
   }
 
   if (request.method === "DELETE") {
+    const token = parseCookies(request.headers.get("Cookie"))[SESSION_COOKIE];
+    const session = await verifySessionToken(token, env.SESSION_SECRET, dependencies.nowMs());
+    if (session) {
+      const store = dependencies.storeFactory(env);
+      await store?.deleteAdminSession(session.id);
+    }
     return json({ authenticated: false }, 200, { "Set-Cookie": expiredSessionCookie(request) });
   }
 
@@ -418,7 +476,7 @@ async function handleAdminApi(request, env, dependencies, pathname) {
     const failed = deliveredCount !== delivery.length;
     return json(
       { emails: delivery, partial: failed && deliveredCount > 0 },
-      failed ? (deliveredCount > 0 ? 207 : 503) : 201,
+      failed ? 207 : 201,
     );
   }
 

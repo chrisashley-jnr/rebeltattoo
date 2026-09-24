@@ -36,7 +36,7 @@ export function Header() {
   return (
     <header className="site-header">
       <div className="site-header__inner container">
-        <SiteLink to="/" className="site-header__brand" aria-label="Rebel Tattoos home"><Brand /></SiteLink>
+        <SiteLink to="/home" className="site-header__brand" aria-label="Rebel Tattoos home"><Brand /></SiteLink>
         <nav className="desktop-nav" aria-label="Primary navigation">
           {navItems.map((item) => (
             <SiteLink key={item.path} to={item.path} className={path === item.path ? "is-active" : ""} aria-current={path === item.path ? "page" : undefined}>

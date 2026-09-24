@@ -2,6 +2,7 @@ import {
   renderAdminBookingEmail,
   renderBookingConfirmationEmail,
   renderManualEmail,
+  safeSiteUrl,
 } from "./email-template.js";
 import { sendSmtpEmail } from "./smtp.js";
 
@@ -20,8 +21,8 @@ function validEmail(value) {
 }
 
 function siteAdminUrl(env, bookingId) {
-  const base = String(env.PUBLIC_SITE_URL || "").replace(/\/$/, "");
-  return base ? `${base}/admin?booking=${encodeURIComponent(bookingId)}` : "Open the admin dashboard to review this booking.";
+  return safeSiteUrl(env, `/admin?booking=${encodeURIComponent(bookingId)}`)
+    || "Open the admin dashboard to review this booking.";
 }
 
 export function getSmtpConfig(env = {}) {

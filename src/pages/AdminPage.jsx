@@ -285,6 +285,15 @@ export function AdminPage() {
   const [emailBody, setEmailBody] = useState("");
   const [emailState, setEmailState] = useState({ loading: false, message: "", error: "" });
 
+  function handleAdminError(error) {
+    if (error?.status !== 401) return false;
+    setSession(null);
+    setBookings([]);
+    setSelectedBooking(null);
+    setSelectedId("");
+    return true;
+  }
+
   useEffect(() => {
     let active = true;
     async function checkSession() {
@@ -318,6 +327,7 @@ export function AdminPage() {
         });
         setListState({ loading: false, error: "" });
       } catch (error) {
+        if (active && handleAdminError(error)) return;
         if (active) setListState({ loading: false, error: error?.message || "Bookings could not be loaded." });
       }
     }
@@ -350,6 +360,7 @@ export function AdminPage() {
         setEmailState({ loading: false, message: "", error: "" });
         setDetailState({ loading: false, error: "" });
       } catch (error) {
+        if (active && handleAdminError(error)) return;
         if (active) setDetailState({ loading: false, error: error?.message || "This booking could not be loaded." });
       }
     }
@@ -365,6 +376,7 @@ export function AdminPage() {
       setBookings(normalizeBookingList(result));
       setListState({ loading: false, error: "" });
     } catch (error) {
+      if (handleAdminError(error)) return;
       setListState({ loading: false, error: error?.message || "Bookings could not be loaded." });
     }
   }
@@ -382,6 +394,7 @@ export function AdminPage() {
       }
       setDetailState({ loading: false, error: "" });
     } catch (error) {
+      if (handleAdminError(error)) return;
       setDetailState({ loading: false, error: error?.message || "This booking could not be loaded." });
     }
   }
@@ -389,11 +402,13 @@ export function AdminPage() {
   async function handleLogout() {
     try {
       await logoutAdmin();
-    } finally {
       setSession(null);
       setBookings([]);
       setSelectedBooking(null);
       setSelectedId("");
+    } catch (error) {
+      if (handleAdminError(error)) return;
+      setListState({ loading: false, error: "Sign out could not complete. Check your connection and try again." });
     }
   }
 
@@ -410,6 +425,7 @@ export function AdminPage() {
       await reloadBookings();
       setSaveState({ loading: false, message: "Changes saved.", error: "" });
     } catch (error) {
+      if (handleAdminError(error)) return;
       setSaveState({ loading: false, message: "", error: error?.message || "Changes could not be saved. Try again." });
     }
   }
@@ -451,6 +467,7 @@ export function AdminPage() {
         setEmailState({ loading: false, message: "Email sent and added to the booking history.", error: "" });
       }
     } catch (error) {
+      if (handleAdminError(error)) return;
       setEmailState({ loading: false, message: "", error: error?.message || "The email could not be sent. Check the details and try again." });
     }
   }

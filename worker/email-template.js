@@ -21,11 +21,11 @@ export function escapeEmailHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function safeSiteUrl(env, pathname = "") {
+export function safeSiteUrl(env, pathname = "") {
   try {
     const base = new URL(String(env.PUBLIC_SITE_URL || ""));
+    if (base.protocol !== "https:" || !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(base.hostname)) return "";
     const url = new URL(pathname || "/", `${base.origin}/`);
-    if (!["https:", "http:"].includes(url.protocol)) return "";
     url.hash = "";
     return url.toString();
   } catch {
@@ -79,7 +79,7 @@ function stepRow(number, title, copy, final = false) {
     </tr>`;
 }
 
-function emailFrame({ preheader, title, intro, content, cta, footerNote }) {
+function emailFrame({ title, intro, content, cta, footerNote }) {
   const ctaMarkup = cta?.url ? `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 0;">
       <tr>
@@ -107,7 +107,6 @@ function emailFrame({ preheader, title, intro, content, cta, footerNote }) {
     </style>
   </head>
   <body style="margin:0;padding:0;background:${palette.surface};color:${palette.ink};">
-    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;line-height:1px;">${escapeEmailHtml(preheader)}&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${palette.surface}" style="width:100%;background:${palette.surface};">
       <tr>
         <td align="center" style="padding:32px 14px;">
@@ -177,7 +176,6 @@ export function renderBookingConfirmationEmail(booking, env) {
     </div>`;
 
   return emailFrame({
-    preheader: `We received your Rebel Tattoos request ${booking.reference}.`,
     title: "Your idea is in.",
     intro: "Your booking request reached Michelle safely. Keep this email for your reference while the details are reviewed.",
     content,
@@ -200,7 +198,6 @@ export function renderAdminBookingEmail(booking, env) {
     <p style="margin:18px 0 0;color:${palette.muted};font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;">The full brief, private notes, and reference images stay inside the protected booking dashboard.</p>`;
 
   return emailFrame({
-    preheader: `New booking ${booking.reference} from ${booking.fullName}.`,
     title: "New booking request.",
     intro: "A new home service request is ready for review.",
     content,
@@ -223,7 +220,6 @@ export function renderManualEmail({ booking, audience, subject, body, env }) {
     <div style="margin:14px 0 0;color:${palette.muted};font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;">${paragraphHtml(shorten(body, 12000))}</div>`;
 
   return emailFrame({
-    preheader: shorten(body, 110),
     title: shorten(subject, 180),
     intro: isBooker ? "A note from Michelle at Rebel Tattoos." : "A copy of this booking message.",
     content,

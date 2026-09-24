@@ -116,11 +116,11 @@ function TextField({
         id={id}
         name={id}
         className="booking-field__control"
-        aria-describedby={messageId}
+        aria-describedby={helper || error ? messageId : undefined}
         aria-invalid={Boolean(error)}
         required={required}
       />
-      <FieldMessage id={messageId} helper={helper} error={error} />
+      {(helper || error) && <FieldMessage id={messageId} helper={helper} error={error} />}
     </div>
   );
 }
@@ -226,6 +226,7 @@ export function BookingPage() {
   const [submitError, setSubmitError] = useState("");
   const formRef = useRef(null);
   const successHeadingRef = useRef(null);
+  const submissionKeyRef = useRef(crypto.randomUUID());
 
   useEffect(() => {
     if (confirmation) successHeadingRef.current?.focus();
@@ -300,7 +301,7 @@ export function BookingPage() {
     setSubmitError("");
     setIsSubmitting(true);
     try {
-      const result = await submitBooking(values, files);
+      const result = await submitBooking(values, files, submissionKeyRef.current);
       setConfirmation({
         fullName: values.fullName.trim(),
         email: values.email.trim(),
@@ -326,6 +327,7 @@ export function BookingPage() {
     setFileError("");
     setSubmitError("");
     setConfirmation(null);
+    submissionKeyRef.current = crypto.randomUUID();
     requestAnimationFrame(() => formRef.current?.elements.fullName?.focus());
   }
 
@@ -372,6 +374,8 @@ export function BookingPage() {
                 <p>Thanks, {confirmation.fullName}. We’ll use <strong>{confirmation.email}</strong> to share timing, pricing, and home session logistics within 2–3 business days.</p>
                 {confirmation.reference && <p className="booking-success__reference">Reference: <strong>{confirmation.reference}</strong></p>}
                 {confirmation.notifications === "demo" && <p className="booking-success__demo">Local demo: the request is visible in the admin dashboard, but no email was delivered.</p>}
+                {confirmation.notifications === "pending_configuration" && <p className="booking-success__demo" role="status">Your request was saved, but email delivery is not configured. Keep your reference number while the studio follows up.</p>}
+                {confirmation.notifications === "queued" && <p className="booking-success__demo" role="status">A confirmation email is being sent. Please allow a few minutes and check your spam folder if it does not appear.</p>}
                 <p className="booking-success__note">Your appointment is confirmed only after design approval and deposit.</p>
                 <button className="booking-button booking-button--outline" type="button" onClick={resetForm}>Send another request</button>
               </section>
@@ -403,7 +407,6 @@ export function BookingPage() {
                     area="name"
                     id="fullName"
                     label="Full name"
-                    helper="As it appears on your ID."
                     placeholder="Your name"
                     autoComplete="name"
                     required

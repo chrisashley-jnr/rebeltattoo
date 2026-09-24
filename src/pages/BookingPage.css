@@ -1,14 +1,14 @@
 .booking-page {
-  --booking-paper: var(--color-bg-base, #f3eee6);
-  --booking-surface: var(--color-bg-surface, #e8e0d6);
-  --booking-ink: var(--color-text-primary, #171319);
-  --booking-muted: var(--color-text-secondary, #625b62);
-  --booking-blue: var(--color-bg-accent, #4b2a50);
-  --booking-blue-dark: var(--color-text-accent, #321a38);
-  --booking-blue-soft: var(--color-bg-accent-subtle, #e5d9e6);
-  --booking-orange: var(--color-detail-orange, #741f3a);
-  --booking-border: var(--border);
-  --booking-error: var(--error, #9b2d35);
+  --booking-paper: var(--color-bg-base, #0c090e);
+  --booking-surface: var(--color-bg-surface, #140f17);
+  --booking-ink: var(--color-text-primary, #f5ede2);
+  --booking-muted: var(--color-text-secondary, #a698a5);
+  --booking-blue: var(--color-bg-accent, #5e2c65);
+  --booking-blue-dark: var(--gold, #d4a359);
+  --booking-blue-soft: var(--color-bg-accent-subtle, #231227);
+  --booking-orange: var(--color-detail-orange, #a82d4c);
+  --booking-border: var(--border, #352638);
+  --booking-error: var(--error, #e04a58);
   background: var(--booking-paper);
   color: var(--booking-ink);
   font-family: var(--font-body, "DM Sans", sans-serif);
@@ -120,11 +120,12 @@
   min-width: 200px;
   min-height: 28px;
   padding: 6px 18px;
-  border: 1px solid var(--booking-ink);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-control);
   place-items: center;
   background: var(--booking-orange);
-  color: var(--inverse, #fffaf3);
+  color: #fffaf3;
+  box-shadow: 0 8px 24px rgba(168, 45, 76, 0.4);
   font-size: 12px;
   font-weight: 600;
   line-height: 1.5;
@@ -162,10 +163,10 @@
   align-items: flex-start;
   margin-top: 24px;
   padding: 14px 16px;
-  border: 1px solid color-mix(in srgb, var(--booking-error) 45%, transparent);
+  border: 1px solid rgba(224, 74, 88, 0.4);
   border-radius: var(--radius-control);
-  background: color-mix(in srgb, var(--booking-error) 7%, var(--booking-paper));
-  color: var(--booking-error);
+  background: rgba(224, 74, 88, 0.12);
+  color: #fca5a5;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.45;
@@ -174,10 +175,10 @@
 .booking-form__demo {
   margin-top: 24px;
   padding: 12px 14px;
-  border: 1px solid var(--booking-border);
+  border: 1px solid #59303a;
   border-radius: var(--radius-control);
-  background: var(--booking-blue-soft);
-  color: var(--booking-blue-dark);
+  background: rgba(104, 37, 54, 0.3);
+  color: var(--gold);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.45;
@@ -248,9 +249,9 @@
   border: 1px solid var(--booking-border);
   border-radius: var(--radius-control);
   outline: none;
-  background: var(--booking-paper);
+  background: #151216;
   color: var(--booking-ink);
-  caret-color: var(--booking-blue);
+  caret-color: var(--gold);
   font: inherit;
   font-size: 15px;
   line-height: 1.45;
@@ -339,8 +340,8 @@ textarea.booking-field__control {
   justify-content: center;
   border: 1px dashed var(--booking-border);
   border-radius: var(--radius-control);
-  background: var(--booking-paper);
-  color: var(--booking-blue-dark);
+  background: #151216;
+  color: var(--gold);
   cursor: pointer;
   font-size: 15px;
   font-weight: 500;
@@ -351,8 +352,8 @@ textarea.booking-field__control {
 
 .booking-upload:hover,
 .booking-upload.is-dragging {
-  border-color: var(--booking-blue);
-  background: var(--booking-blue-soft);
+  border-color: var(--gold);
+  background: rgba(212, 163, 89, 0.08);
 }
 
 .booking-upload__native {
@@ -382,7 +383,7 @@ textarea.booking-field__control {
   padding: 7px 8px 7px 12px;
   border: 1px solid var(--booking-border);
   border-radius: var(--radius-control);
-  background: var(--booking-paper);
+  background: #151216;
 }
 
 .booking-upload__file-copy {
@@ -458,22 +459,24 @@ textarea.booking-field__control {
   justify-content: center;
   margin-top: 15px;
   padding: 14px 24px;
-  border: 1px solid var(--booking-blue);
+  border: 1px solid #9e5362;
   border-radius: var(--radius-control);
-  background: var(--booking-blue);
-  color: var(--inverse, #fffaf3);
+  background: linear-gradient(135deg, #762a3b 0%, #4b1825 100%);
+  box-shadow: 0 4px 20px rgba(55, 12, 24, 0.35);
+  color: #fffaf3;
   cursor: pointer;
   font: inherit;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 18px;
-  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+  transition: all 160ms ease;
 }
 
 .booking-button:hover:not(:disabled) {
-  border-color: var(--booking-blue-dark);
-  background: var(--booking-blue-dark);
+  border-color: #bd6979;
+  background: linear-gradient(135deg, #91394d 0%, #60202f 100%);
+  box-shadow: 0 6px 24px rgba(68, 16, 31, 0.5);
   transform: translateY(-1px);
 }
 
@@ -496,7 +499,7 @@ textarea.booking-field__control {
 .booking-button--outline:hover:not(:disabled) {
   border-color: var(--booking-ink);
   background: var(--booking-ink);
-  color: var(--inverse, #fffaf3);
+  color: var(--booking-paper);
 }
 
 .booking-button__spinner {
@@ -527,9 +530,9 @@ textarea.booking-field__control {
 .booking-info-card--dark {
   min-height: 580px;
   padding: 36px 32px;
-  border-color: var(--divider-dark, #3e3039);
-  background: var(--booking-ink);
-  color: var(--inverse, #fffaf3);
+  border-color: var(--border);
+  background: #1a151a;
+  color: var(--booking-ink);
 }
 
 .booking-info-card--dark h2 {
@@ -557,6 +560,7 @@ textarea.booking-field__control {
 
 .booking-info-card dt {
   font-weight: 600;
+  color: var(--gold);
 }
 
 .booking-info-card dd {
@@ -566,15 +570,15 @@ textarea.booking-field__control {
 .booking-info-card--dark > p {
   margin: 32px 0 0;
   padding-top: 28px;
-  border-top: 1px solid color-mix(in srgb, var(--inverse, #fffaf3) 55%, transparent);
-  color: var(--inverse-muted, #c8bbc2);
+  border-top: 1px solid var(--border);
+  color: var(--muted);
   font-size: 13px;
 }
 
 .booking-info-card--blue {
   min-height: 240px;
-  border-color: color-mix(in srgb, var(--booking-blue) 22%, var(--booking-border));
-  background: var(--booking-blue-soft);
+  border-color: #59303a;
+  background: #24161c;
   color: var(--booking-ink);
 }
 
@@ -590,7 +594,7 @@ textarea.booking-field__control {
 .booking-info-card--paper {
   min-height: 220px;
   border: 1px solid var(--booking-border);
-  background: var(--booking-paper);
+  background: var(--surface);
 }
 
 .booking-info-card--paper p {
@@ -604,11 +608,11 @@ textarea.booking-field__control {
   padding: 56px;
   border: 1px solid var(--booking-border);
   border-radius: var(--radius-card);
-  background: var(--booking-paper);
+  background: var(--surface);
 }
 
 .booking-success > svg {
-  color: var(--booking-blue);
+  color: var(--gold);
 }
 
 .booking-success__eyebrow {

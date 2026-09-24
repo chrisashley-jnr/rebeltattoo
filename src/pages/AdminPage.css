@@ -6,7 +6,7 @@
   --admin-muted: var(--muted, #625b62);
   --admin-border: var(--border, #87757f);
   --admin-blue: var(--cobalt, #4b2a50);
-  --admin-blue-dark: var(--cobalt-dark, #321a38);
+  --admin-blue-dark: var(--gold, #d9baa9);
   --admin-blue-soft: var(--cobalt-soft, #e5d9e6);
   --admin-orange: var(--orange, #741f3a);
   --admin-orange-soft: var(--orange-soft, #ead7de);
@@ -105,8 +105,8 @@
 }
 
 .admin-button--primary:hover:not(:disabled) {
-  border-color: var(--admin-blue-dark);
-  background: var(--admin-blue-dark);
+  border-color: var(--cobalt-dark);
+  background: var(--cobalt-dark);
 }
 
 .admin-button--secondary {
@@ -158,6 +158,8 @@
 
 .admin-brand__images img:first-child { width: auto; height: 34px; }
 .admin-brand__images img:last-child { width: auto; height: 21px; }
+.admin-brand__images img,
+.admin-login__brand img { filter: brightness(0) invert(1); }
 
 .admin-brand__label {
   padding-left: 18px;
@@ -179,7 +181,7 @@
   gap: 12px;
   border-bottom: 1px solid color-mix(in srgb, var(--admin-orange) 34%, var(--admin-border));
   padding: 8px 20px;
-  color: #511327;
+  color: var(--gold);
   background: var(--admin-orange-soft);
   font-size: 0.78rem;
   line-height: 1.4;
@@ -493,18 +495,18 @@
 }
 
 .admin-status[data-status="new"],
-.admin-status[data-status="in-review"] { color: var(--admin-blue-dark); border-color: #a996a3; background: var(--admin-blue-soft); }
+.admin-status[data-status="in-review"] { color: var(--gold); border-color: #6b4855; background: var(--admin-blue-soft); }
 .admin-status[data-status="new"] > span,
 .admin-status[data-status="in-review"] > span { background: var(--admin-blue); }
 
 .admin-status[data-status="needs-reply"],
-.admin-status[data-status="awaiting-deposit"] { color: #511327; border-color: #b98696; background: var(--admin-orange-soft); }
+.admin-status[data-status="awaiting-deposit"] { color: #e6b3bd; border-color: #78424e; background: var(--admin-orange-soft); }
 .admin-status[data-status="needs-reply"] > span,
 .admin-status[data-status="awaiting-deposit"] > span { background: var(--admin-orange); }
 
-.admin-status[data-status="confirmed"] { color: #275a3c; border-color: #9cbea7; background: #dfeade; }
+.admin-status[data-status="confirmed"] { color: #a9dabb; border-color: #426650; background: #16271c; }
 .admin-status[data-status="confirmed"] > span { background: var(--admin-success); }
-.admin-status[data-status="declined"] { color: var(--admin-error); border-color: #c99ea5; background: #f0d8dc; }
+.admin-status[data-status="declined"] { color: #f19ea7; border-color: #81434c; background: #30181f; }
 .admin-status[data-status="declined"] > span { background: var(--admin-error); }
 
 .admin-detail__mobile-bar { display: none; }
@@ -629,7 +631,7 @@
 .admin-prose-field p {
   margin: 7px 0 0;
   white-space: pre-wrap;
-  color: #393039;
+  color: var(--admin-muted);
   font-size: 0.83rem;
   line-height: 1.6;
 }
@@ -687,7 +689,7 @@
   width: 46%;
   height: 7px;
   border-radius: 5px;
-  background: #d8ced0;
+  background: var(--admin-border);
   content: "";
 }
 .admin-attachment.is-error { color: var(--admin-muted); background: var(--admin-paper); }
@@ -801,7 +803,7 @@
   padding: 10px 11px;
   border: 1px solid #b98696;
   border-radius: var(--admin-radius-control);
-  color: #511327;
+  color: #e6b3bd;
   background: var(--admin-orange-soft);
   font-size: 0.69rem;
   font-weight: 600;
@@ -850,10 +852,10 @@
 .admin-email-history .admin-email-history__status { font-weight: 700; }
 .admin-email-history__status.is-sent { color: var(--admin-success); }
 .admin-email-history__status.is-failed { color: var(--admin-error); }
-.admin-email-history__status.is-unconfigured { color: #511327; }
+.admin-email-history__status.is-unconfigured { color: #e6b3bd; }
 .admin-email-history details { margin-top: 7px; }
 .admin-email-history summary { width: fit-content; color: var(--admin-blue-dark); cursor: pointer; font-size: 0.69rem; font-weight: 600; }
-.admin-email-history details p { white-space: pre-wrap; color: #393039; font-size: 0.75rem; }
+.admin-email-history details p { white-space: pre-wrap; color: var(--admin-muted); font-size: 0.75rem; }
 
 .admin-history-empty {
   display: flex;
@@ -897,7 +899,7 @@
 .admin-detail-skeleton span {
   height: 16px;
   border-radius: 6px;
-  background: #ddd3d4;
+  background: var(--admin-border);
 }
 .admin-detail-skeleton span:nth-child(1) { width: 34%; }
 .admin-detail-skeleton span:nth-child(2) { width: 68%; height: 26px; }

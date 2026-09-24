@@ -291,7 +291,7 @@
 
 .portfolio-lightbox__media {
   min-height: min(76dvh, 760px);
-  background: var(--gallery-ink);
+  background: #09090d;
 }
 
 .portfolio-lightbox__media img {

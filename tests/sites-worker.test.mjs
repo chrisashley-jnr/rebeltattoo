@@ -1,15 +1,63 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import {
   renderBookingConfirmationEmail,
+  renderAdminBookingEmail,
   renderManualEmail,
 } from "../worker/email-template.js";
+import { createBookingEmailRecords } from "../worker/email.js";
+import { buildMimeMessage } from "../worker/smtp.js";
 import worker, { createWorker } from "../worker/index.js";
+import { createDevBindings } from "../worker/dev-adapter.js";
+import legacyBookingHandler from "../api/bookings.js";
 
 const FIXED_NOW = "2026-09-22T12:00:00.000Z";
 const FIXED_NOW_MS = Date.parse(FIXED_NOW);
+
+test("SMTP messages use a real sender domain and standards-compliant UTF-8 MIME", () => {
+  const raw = buildMimeMessage({
+    from: "Rebel Tattoos <studio@gmail.com>",
+    to: "booker@example.test",
+    replyTo: "studio@gmail.com",
+    subject: "We received your request — RT-123",
+    text: "Thank you — your request arrived.",
+    html: "<p>Thank you — your request arrived.</p>",
+  });
+  assert.match(raw, /Message-ID: <[a-f0-9-]+@gmail\.com>\r\n/);
+  assert.match(raw, /Subject: =\?UTF-8\?B\?/);
+  assert.equal((raw.match(/Content-Transfer-Encoding: base64/g) || []).length, 2);
+  assert.doesNotMatch(raw, /@rebeltattoos>|Content-Transfer-Encoding: 8bit|display:none/);
+  assert.ok(raw.endsWith("\r\n"));
+  assert.ok(raw.includes(Buffer.from("Thank you — your request arrived.").toString("base64")));
+});
+
+test("local development URLs are omitted from booking emails", () => {
+  const booking = bookingFixture();
+  const env = { PUBLIC_SITE_URL: "http://localhost:5173", ADMIN_EMAIL: "studio@example.test" };
+  const bookerHtml = renderBookingConfirmationEmail(booking, env);
+  const adminHtml = renderAdminBookingEmail(booking, env);
+  const records = createBookingEmailRecords(booking, env, FIXED_NOW, () => crypto.randomUUID());
+  assert.doesNotMatch(bookerHtml, /localhost|display:none|href=/i);
+  assert.doesNotMatch(adminHtml, /localhost|display:none|href=/i);
+  assert.doesNotMatch(records[1].body, /localhost/i);
+});
+
+test("legacy deployment rejects bookings it cannot persist", () => {
+  const headers = {};
+  const response = {
+    setHeader(name, value) { headers[name.toLowerCase()] = value; },
+    status(code) { this.statusCode = code; return this; },
+    json(payload) { this.payload = payload; return this; },
+  };
+  legacyBookingHandler({ method: "POST" }, response);
+  assert.equal(response.statusCode, 503);
+  assert.match(response.payload.error, /unavailable/);
+  assert.equal(headers["content-type"], "application/json; charset=utf-8");
+});
 
 function createIdFactory(ids) {
   let index = 0;
@@ -54,10 +102,27 @@ function createFakeStore(initialBooking = null) {
     addedEmails: [],
     emailUpdates: [],
     listQueries: [],
+    sessions: new Map(),
+    loginAttempts: new Map(),
   };
 
   const store = {
     async ready() {},
+    async createAdminSession(id, expiresAt) { state.sessions.set(id, expiresAt); },
+    async hasAdminSession(id, nowMs) { return (state.sessions.get(id) || 0) > nowMs; },
+    async deleteAdminSession(id) { state.sessions.delete(id); },
+    async getLoginAttempts(key, nowMs) {
+      const attempt = state.loginAttempts.get(key);
+      return attempt && attempt.until > nowMs ? attempt.count : 0;
+    },
+    async recordLoginFailure(key, nowMs, windowMs) {
+      const previous = state.loginAttempts.get(key);
+      state.loginAttempts.set(key, {
+        count: previous && previous.until > nowMs ? previous.count + 1 : 1,
+        until: previous && previous.until > nowMs ? previous.until : nowMs + windowMs,
+      });
+    },
+    async clearLoginFailures(key) { state.loginAttempts.delete(key); },
     async findByIdempotencyKey() {
       return null;
     },
@@ -337,7 +402,7 @@ test("supports admin login, session, booking list and update, and email to both 
     storeFactory: () => store,
     now: () => FIXED_NOW,
     nowMs: () => FIXED_NOW_MS,
-    randomUUID: createIdFactory(["manual-booker-email", "manual-admin-email"]),
+    randomUUID: createIdFactory(["admin-session-0000000000000001", "manual-booker-email", "manual-admin-email"]),
     emailFetch: async (url, options) => {
       emailRequests.push({ url, payload: JSON.parse(options.body) });
       return Response.json({ id: `manual-provider-${emailRequests.length}` });
@@ -425,7 +490,7 @@ test("reports partial delivery so a failed recipient can be retried without dupl
     storeFactory: () => store,
     now: () => FIXED_NOW,
     nowMs: () => FIXED_NOW_MS,
-    randomUUID: createIdFactory(["partial-booker-email", "partial-admin-email"]),
+    randomUUID: createIdFactory(["admin-session-0000000000000002", "partial-booker-email", "partial-admin-email"]),
     emailFetch: async () => {
       emailRequestCount += 1;
       return emailRequestCount === 1
@@ -456,6 +521,37 @@ test("reports partial delivery so a failed recipient can be retried without dupl
   ]);
 });
 
+test("reports every failed email while preserving recipient-specific retry details", async () => {
+  const { store } = createFakeStore(bookingFixture());
+  const api = createWorker({
+    storeFactory: () => store,
+    now: () => FIXED_NOW,
+    nowMs: () => FIXED_NOW_MS,
+    randomUUID: createIdFactory(["admin-session-0000000000000003", "failed-booker-email", "failed-admin-email"]),
+    emailFetch: async () => Response.json({ message: "Temporary provider failure" }, { status: 503 }),
+  });
+  const env = configuredEnv();
+  const loginResponse = await api.fetch(new Request("https://example.test/api/admin/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: env.ADMIN_PASSWORD }),
+  }), env);
+  const cookie = loginResponse.headers.get("set-cookie").split(";", 1)[0];
+  const response = await api.fetch(new Request("https://example.test/api/admin/bookings/booking-admin-1/emails", {
+    method: "POST",
+    headers: { Cookie: cookie, "Content-Type": "application/json" },
+    body: JSON.stringify({ audience: "both", subject: "Next step", body: "Here is the next step for your booking." }),
+  }), env);
+  const payload = await response.json();
+
+  assert.equal(response.status, 207);
+  assert.equal(payload.partial, false);
+  assert.deepEqual(payload.emails.map(({ audience, status }) => ({ audience, status })), [
+    { audience: "booker", status: "failed" },
+    { audience: "admin", status: "failed" },
+  ]);
+});
+
 test("emits all worker modules, hosting metadata, and the booking migration", async () => {
   const requiredOutputs = [
     "../dist/client/index.html",
@@ -467,12 +563,14 @@ test("emits all worker modules, hosting metadata, and the booking migration", as
     "../dist/.openai/hosting.json",
     "../dist/.openai/drizzle/0000_booking_admin.sql",
     "../dist/.openai/drizzle/0001_email_html.sql",
+    "../dist/.openai/drizzle/0002_admin_security.sql",
   ];
   await Promise.all(requiredOutputs.map((path) => access(new URL(path, import.meta.url))));
 
   const hosting = JSON.parse(await readFile(new URL("../dist/.openai/hosting.json", import.meta.url), "utf8"));
   const migration = await readFile(new URL("../dist/.openai/drizzle/0000_booking_admin.sql", import.meta.url), "utf8");
   const emailMigration = await readFile(new URL("../dist/.openai/drizzle/0001_email_html.sql", import.meta.url), "utf8");
+  const securityMigration = await readFile(new URL("../dist/.openai/drizzle/0002_admin_security.sql", import.meta.url), "utf8");
   assert.equal(hosting.d1, "DB");
   assert.equal(hosting.r2, "UPLOADS");
   if (hosting.project_id !== undefined) assert.equal(typeof hosting.project_id, "string");
@@ -480,6 +578,8 @@ test("emits all worker modules, hosting metadata, and the booking migration", as
   assert.match(migration, /CREATE TABLE IF NOT EXISTS booking_files/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS booking_emails/);
   assert.match(emailMigration, /ADD COLUMN body_html/);
+  assert.match(securityMigration, /CREATE TABLE IF NOT EXISTS admin_sessions/);
+  assert.match(securityMigration, /CREATE TABLE IF NOT EXISTS admin_login_attempts/);
 });
 
 test("upgrades existing email records and persists branded HTML", async () => {
@@ -594,4 +694,124 @@ test("creates a booking and delivers emails via Gmail SMTP", async () => {
   assert.equal(smtpCalls[0].from, "Rebel Tattoos <rebeltattoo101@gmail.com>");
   assert.equal(smtpCalls[1].to, "rebeltattoo101@gmail.com");
   assert.match(smtpCalls[0].html, /Your idea is in/);
+});
+
+test("admin rejects anonymous access, throttles failed logins, and revokes logout sessions", async () => {
+  const { state, store } = createFakeStore(bookingFixture());
+  let nowMs = FIXED_NOW_MS;
+  const api = createWorker({
+    storeFactory: () => store,
+    nowMs: () => nowMs,
+    randomUUID: () => "secure-session-0000000000000001",
+  });
+  const env = configuredEnv();
+  const sessionUrl = "https://example.test/api/admin/session";
+  const listUrl = "https://example.test/api/admin/bookings";
+
+  assert.equal((await api.fetch(new Request(sessionUrl), env)).status, 401);
+  assert.equal((await api.fetch(new Request(listUrl), env)).status, 401);
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const response = await api.fetch(new Request(sessionUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.5" },
+      body: JSON.stringify({ password: "wrong password" }),
+    }), env);
+    assert.equal(response.status, 401);
+  }
+
+  const blocked = await api.fetch(new Request(sessionUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.5" },
+    body: JSON.stringify({ password: env.ADMIN_PASSWORD }),
+  }), env);
+  assert.equal(blocked.status, 429);
+  assert.equal(blocked.headers.get("Retry-After"), "900");
+
+  nowMs += 15 * 60 * 1000 + 1;
+  const login = await api.fetch(new Request(sessionUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.5" },
+    body: JSON.stringify({ password: env.ADMIN_PASSWORD }),
+  }), env);
+  assert.equal(login.status, 200);
+  const cookie = login.headers.get("set-cookie").split(";", 1)[0];
+  assert.equal(state.sessions.size, 1);
+  assert.equal((await api.fetch(new Request(listUrl, { headers: { Cookie: cookie } }), env)).status, 200);
+
+  const crossSiteUpdate = await api.fetch(new Request("https://example.test/api/admin/bookings/booking-admin-1", {
+    method: "PATCH",
+    headers: { Cookie: cookie, Origin: "https://other.example", "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "confirmed", adminNotes: "Should not save" }),
+  }), env);
+  assert.equal(crossSiteUpdate.status, 403);
+
+  const logout = await api.fetch(new Request(sessionUrl, { method: "DELETE", headers: { Cookie: cookie } }), env);
+  assert.equal(logout.status, 200);
+  assert.equal(state.sessions.size, 0);
+  assert.equal((await api.fetch(new Request(listUrl, { headers: { Cookie: cookie } }), env)).status, 401);
+});
+
+test("rejects a disguised reference image before saving a booking", async () => {
+  const { state, store } = createFakeStore();
+  const form = validBookingForm();
+  form.append("referenceImages", new File(["not an image"], "reference.png", { type: "image/png" }));
+  const api = createWorker({ storeFactory: () => store, now: () => FIXED_NOW });
+  const response = await api.fetch(new Request("https://example.test/api/bookings", {
+    method: "POST",
+    body: form,
+  }), configuredEnv({ UPLOADS: {} }));
+  assert.equal(response.status, 422);
+  assert.equal(state.createdBookings.length, 0);
+});
+
+test("local Worker storage persists a booking and private attachment for admin", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "rebel-booking-test-"));
+  const settings = {
+    ADMIN_PASSWORD: "a-local-test-password-only",
+    SESSION_SECRET: "a-long-random-local-session-secret-for-test",
+    ADMIN_EMAIL: "studio@example.test",
+  };
+  let env;
+  try {
+    env = await createDevBindings(root, settings);
+    const tasks = [];
+    const api = createWorker({ now: () => FIXED_NOW, nowMs: () => FIXED_NOW_MS });
+    const form = validBookingForm();
+    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==", "base64");
+    form.append("referenceImages", new File([png], "example.png", { type: "image/png" }));
+    const created = await api.fetch(new Request("https://example.test/api/bookings", {
+      method: "POST",
+      headers: { "Idempotency-Key": "local-persistence-test" },
+      body: form,
+    }), env, { waitUntil(task) { tasks.push(task); } });
+    const payload = await created.json();
+    assert.equal(created.status, 201);
+    await Promise.all(tasks);
+    env.DB.close();
+
+    env = await createDevBindings(root, settings);
+    const login = await api.fetch(new Request("https://example.test/api/admin/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: settings.ADMIN_PASSWORD }),
+    }), env);
+    assert.equal(login.status, 200);
+    const cookie = login.headers.get("set-cookie").split(";", 1)[0];
+    const detail = await api.fetch(new Request(`https://example.test/api/admin/bookings/${payload.booking.id}`, {
+      headers: { Cookie: cookie },
+    }), env);
+    const booking = (await detail.json()).booking;
+    assert.equal(detail.status, 200);
+    assert.equal(booking.fullName, "Ama Mensah");
+    assert.equal(booking.attachments.length, 1);
+    const file = await api.fetch(new Request(`https://example.test/api/admin/bookings/${booking.id}/files/${booking.attachments[0].id}`, {
+      headers: { Cookie: cookie },
+    }), env);
+    assert.equal(file.status, 200);
+    assert.equal((await file.arrayBuffer()).byteLength, png.length);
+  } finally {
+    env?.DB.close();
+    await rm(root, { recursive: true, force: true });
+  }
 });

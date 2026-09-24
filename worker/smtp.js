@@ -1,17 +1,79 @@
 function toBase64(str) {
+  const bytes = new TextEncoder().encode(String(str));
   if (typeof Buffer !== "undefined") {
-    return Buffer.from(str, "utf8").toString("base64");
+    return Buffer.from(bytes).toString("base64");
   }
-  return btoa(unescape(encodeURIComponent(str)));
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += 8192) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + 8192));
+  }
+  return btoa(binary);
 }
 
-function escapeDots(text = "") {
-  return String(text).replace(/\r?\n\./g, "\r\n..");
+function base64Lines(value) {
+  return (toBase64(value).match(/.{1,76}/g) || [""]).join("\r\n");
+}
+
+function cleanHeader(value) {
+  return String(value || "").replace(/[\r\n\0]+/g, " ").trim();
+}
+
+function encodedSubject(value) {
+  const subject = cleanHeader(value);
+  if (/^[\x20-\x7e]*$/.test(subject) && subject.length <= 70) return subject;
+  const chunks = [];
+  let current = "";
+  for (const character of subject) {
+    if (new TextEncoder().encode(current + character).length > 42 && current) {
+      chunks.push(`=?UTF-8?B?${toBase64(current)}?=`);
+      current = "";
+    }
+    current += character;
+  }
+  if (current) chunks.push(`=?UTF-8?B?${toBase64(current)}?=`);
+  return chunks.join("\r\n ");
 }
 
 function extractEmail(value) {
   const match = String(value || "").match(/<([^<>]+)>/);
   return (match ? match[1] : value).trim();
+}
+
+export function buildMimeMessage({ from, to, replyTo, subject, text, html }) {
+  const fromAddress = extractEmail(from);
+  const domain = fromAddress.split("@")[1]?.toLowerCase();
+  if (!domain || !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain)) {
+    throw new Error("A valid sender domain is required.");
+  }
+  const boundary = `----=_Part_${crypto.randomUUID().replaceAll("-", "")}`;
+  const headers = [
+    `From: ${cleanHeader(from)}`,
+    `To: ${cleanHeader(to)}`,
+    ...(replyTo ? [`Reply-To: ${cleanHeader(replyTo)}`] : []),
+    `Subject: ${encodedSubject(subject)}`,
+    `Date: ${new Date().toUTCString()}`,
+    `Message-ID: <${crypto.randomUUID()}@${domain}>`,
+    "MIME-Version: 1.0",
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+  ];
+  const parts = [
+    `--${boundary}`,
+    "Content-Type: text/plain; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    base64Lines(text || ""),
+    "",
+  ];
+  if (html) parts.push(
+    `--${boundary}`,
+    "Content-Type: text/html; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    base64Lines(html),
+    "",
+  );
+  parts.push(`--${boundary}--`, "");
+  return `${headers.join("\r\n")}\r\n\r\n${parts.join("\r\n")}`;
 }
 
 async function openTlsTransport({ host, port }) {
@@ -199,42 +261,7 @@ export async function sendSmtpEmail({
       throw new Error(`DATA initiation rejected (${reply.code}): ${reply.text}`);
     }
 
-    const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const headerLines = [
-      `From: ${from}`,
-      `To: ${to}`,
-      ...(replyTo ? [`Reply-To: ${replyTo}`] : []),
-      `Subject: ${subject}`,
-      `Date: ${new Date().toUTCString()}`,
-      `Message-ID: <${Date.now()}.${Math.random().toString(36).slice(2)}@rebeltattoos>`,
-      `MIME-Version: 1.0`,
-      `Content-Type: multipart/alternative; boundary="${boundary}"`,
-    ];
-
-    const rawBody = [
-      headerLines.join("\r\n"),
-      "",
-      `--${boundary}`,
-      "Content-Type: text/plain; charset=UTF-8",
-      "Content-Transfer-Encoding: 8bit",
-      "",
-      escapeDots(text || ""),
-      "",
-      ...(html
-        ? [
-            `--${boundary}`,
-            "Content-Type: text/html; charset=UTF-8",
-            "Content-Transfer-Encoding: 8bit",
-            "",
-            escapeDots(html),
-            "",
-          ]
-        : []),
-      `--${boundary}--`,
-      "",
-    ].join("\r\n");
-
-    await transport.write(rawBody + ".\r\n");
+    await transport.write(buildMimeMessage({ from, to, replyTo, subject, text, html }) + ".\r\n");
     reply = await readReply(transport);
     if (reply.code !== 250) {
       throw new Error(`Email content rejected (${reply.code}): ${reply.text}`);

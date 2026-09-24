@@ -8,13 +8,15 @@ A responsive multi-page booking website for Rebel Tattoos, including Home, Galle
 2. Start the local site with `npm run dev`.
 3. Open the local URL shown in the terminal.
 
-The local preview uses clearly labeled sample data so the complete flow can be reviewed without connecting external services. Submit the Contact form, then open `/admin` and use the displayed demo password: `rebel-demo`.
+The local preview uses the same booking and admin API as production, backed by a private SQLite database and upload directory in `.local-data/`. Put a unique `ADMIN_PASSWORD` (at least 12 characters) and `SESSION_SECRET` (at least 32 characters) in an untracked `.dev.vars` file, then submit a request at `/booking` and sign in at `/admin`. If SMTP or Resend credentials are present, local bookings send real emails. Without them, the dashboard shows that delivery is not configured.
+
+For an offline sample-data preview, start Vite with `VITE_DEMO_MODE=true`. That mode is only available during development and labels its sample records and messages.
 
 ## Production features
 
 - Booking details are stored in D1.
 - Reference images are stored privately in R2 and are only served through authenticated admin routes.
-- `/admin` uses an expiring signed, HTTP-only session cookie.
+- `/admin` uses an eight-hour signed, HTTP-only, same-site session cookie. Sessions are checked against storage and revoked on sign-out. Sign-in is rate limited, and admin writes require the same origin.
 - Automatic booking acknowledgements and dashboard-composed emails use Resend when configured. Every message includes a responsive, branded HTML design plus a complete plain-text fallback.
 - The public form is validated on both the page and server, includes a honeypot, caps file type/size/count, and rate-limits repeated submissions by email.
 
@@ -32,7 +34,9 @@ Use `.dev.vars.example` as the list of required settings:
 - `RESEND_API_KEY`: alternative email provider API key (if using Resend instead of Gmail SMTP).
 - `PUBLIC_SITE_URL`: final public site URL, used in admin notification links.
 
-Do not place real credentials in frontend code or commit them to the project. Without email credentials, bookings are still saved and the dashboard remains usable; email records are marked as not configured instead of pretending they were sent.
+Use a public HTTPS address for `PUBLIC_SITE_URL`. Localhost links are omitted from outgoing messages. With Gmail SMTP, set `EMAIL_FROM` to the authenticated Gmail address. For a custom sending domain, configure its SPF, DKIM, and DMARC records with the mail provider. A provider accepting an email does not guarantee that a recipient's spam filter will place it in the main inbox.
+
+Deploy the Sites build with its `DB` (D1) and `UPLOADS` (R2) bindings and apply every migration in `.openai/drizzle`, including `0002_admin_security.sql`. The older Vercel function now returns HTTP 503 because it cannot persist bookings for the dashboard. Do not place real credentials in frontend code or commit them to the project. Without email credentials, bookings are still saved and the dashboard remains usable; email records are marked as not configured instead of pretending they were sent.
 
 ## Useful commands
 

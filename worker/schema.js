@@ -47,12 +47,23 @@ export const SCHEMA_STATEMENTS = [
     sent_at TEXT,
     FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
   )`,
+  `CREATE TABLE IF NOT EXISTS admin_sessions (
+    id TEXT PRIMARY KEY,
+    expires_at INTEGER NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS admin_login_attempts (
+    login_key TEXT PRIMARY KEY,
+    attempts INTEGER NOT NULL,
+    window_until INTEGER NOT NULL
+  )`,
   `CREATE INDEX IF NOT EXISTS idx_bookings_status_created_at
     ON bookings(status, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_booking_files_booking_id
     ON booking_files(booking_id)`,
   `CREATE INDEX IF NOT EXISTS idx_booking_emails_booking_created_at
     ON booking_emails(booking_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires_at
+    ON admin_sessions(expires_at)`,
   "PRAGMA optimize",
 ];
 

@@ -2,6 +2,7 @@ node_modules/
 dist/
 .dev.vars
 .dev.vars.local
+.local-data/
 .env
 .env.local
 *.zip

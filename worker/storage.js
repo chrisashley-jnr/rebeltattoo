@@ -78,6 +78,47 @@ export function createBookingStore(env) {
       await ensureSchema(db);
     },
 
+    async createAdminSession(id, expiresAt, nowMs) {
+      await ensureSchema(db);
+      await db.prepare("DELETE FROM admin_sessions WHERE expires_at <= ?").bind(nowMs).run();
+      await db.prepare("INSERT INTO admin_sessions (id, expires_at) VALUES (?, ?)")
+        .bind(id, expiresAt).run();
+    },
+
+    async hasAdminSession(id, nowMs) {
+      await ensureSchema(db);
+      const row = await db.prepare("SELECT id FROM admin_sessions WHERE id = ? AND expires_at > ? LIMIT 1")
+        .bind(id, nowMs).first();
+      return Boolean(row);
+    },
+
+    async deleteAdminSession(id) {
+      await ensureSchema(db);
+      await db.prepare("DELETE FROM admin_sessions WHERE id = ?").bind(id).run();
+    },
+
+    async getLoginAttempts(key, nowMs) {
+      await ensureSchema(db);
+      const row = await db.prepare("SELECT attempts, window_until FROM admin_login_attempts WHERE login_key = ? LIMIT 1")
+        .bind(key).first();
+      return row && row.window_until > nowMs ? Number(row.attempts) : 0;
+    },
+
+    async recordLoginFailure(key, nowMs, windowMs) {
+      await ensureSchema(db);
+      const until = nowMs + windowMs;
+      await db.prepare(`INSERT INTO admin_login_attempts (login_key, attempts, window_until)
+        VALUES (?, 1, ?) ON CONFLICT(login_key) DO UPDATE SET
+        attempts = CASE WHEN window_until <= ? THEN 1 ELSE attempts + 1 END,
+        window_until = CASE WHEN window_until <= ? THEN ? ELSE window_until END`)
+        .bind(key, until, nowMs, nowMs, until).run();
+    },
+
+    async clearLoginFailures(key) {
+      await ensureSchema(db);
+      await db.prepare("DELETE FROM admin_login_attempts WHERE login_key = ?").bind(key).run();
+    },
+
     async findByIdempotencyKey(key) {
       if (!key) return null;
       await ensureSchema(db);

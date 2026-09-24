@@ -2,13 +2,16 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
+import { Readable } from "node:stream";
+import { createWorker } from "./worker/index.js";
+import { createDevBindings } from "./worker/dev-adapter.js";
 
 function apiDevPlugin() {
   return {
     name: "api-dev-server",
-    configureServer(server) {
-      // Load .dev.vars if present
+    async configureServer(server) {
       const devVarsPath = path.resolve(process.cwd(), ".dev.vars");
+      const settings = {};
       if (fs.existsSync(devVarsPath)) {
         const content = fs.readFileSync(devVarsPath, "utf-8");
         for (const line of content.split("\n")) {
@@ -17,36 +20,43 @@ function apiDevPlugin() {
           const eqIdx = trimmed.indexOf("=");
           if (eqIdx !== -1) {
             const key = trimmed.slice(0, eqIdx).trim();
-            const val = trimmed.slice(eqIdx + 1).trim();
-            if (!process.env[key]) process.env[key] = val;
+            if (["ADMIN_PASSWORD", "SESSION_SECRET", "ADMIN_EMAIL", "PUBLIC_SITE_URL", "EMAIL_FROM", "SMTP_USER", "SMTP_PASS", "SMTP_HOST", "SMTP_PORT", "RESEND_API_KEY"].includes(key)) {
+              settings[key] = trimmed.slice(eqIdx + 1).trim();
+            }
           }
         }
       }
 
+      // Keep local bookings and uploads private. Configured mail providers send real email.
+      const env = await createDevBindings(process.cwd(), settings);
+      const worker = createWorker();
+      server.httpServer?.once("close", () => env.DB.close());
+
       server.middlewares.use(async (req, res, next) => {
-        if (req.url && req.url.startsWith("/api/bookings") && req.method === "POST") {
+        if (req.url && (req.url === "/api" || req.url.startsWith("/api/"))) {
           try {
-            const { default: handler } = await import("./api/bookings.js");
-            // Add res helper methods if missing
-            if (!res.status) {
-              res.status = (code) => {
-                res.statusCode = code;
-                return res;
-              };
+            const url = new URL(req.url, `http://${req.headers.host || "127.0.0.1"}`);
+            const request = new Request(url, {
+              method: req.method,
+              headers: req.headers,
+              body: ["GET", "HEAD"].includes(req.method) ? undefined : Readable.toWeb(req),
+              duplex: "half",
+            });
+            const response = await worker.fetch(request, env, {
+              waitUntil(task) { task.catch((error) => server.config.logger.error(`Background API task failed: ${error.message}`)); },
+            });
+            res.statusCode = response.status;
+            response.headers.forEach((value, name) => res.setHeader(name, value));
+            if (response.body) {
+              for await (const chunk of Readable.fromWeb(response.body)) res.write(chunk);
             }
-            if (!res.json) {
-              res.json = (data) => {
-                res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify(data));
-                return res;
-              };
-            }
-            return await handler(req, res);
+            res.end();
+            return;
           } catch (err) {
             console.error("API dev middleware error:", err);
             res.statusCode = 500;
             res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ error: err.message || "Internal server error" }));
+            res.end(JSON.stringify({ error: "The local API could not complete this request." }));
             return;
           }
         }
@@ -64,7 +74,7 @@ export default defineConfig({
     include: ["react", "react-dom/client"],
   },
   server: {
-    host: "0.0.0.0",
+    host: "127.0.0.1",
     allowedHosts: ["terminal.local"],
     warmup: {
       clientFiles: ["./src/main.jsx"],
@@ -72,4 +82,3 @@ export default defineConfig({
   },
   plugins: [react(), apiDevPlugin()],
 });
-

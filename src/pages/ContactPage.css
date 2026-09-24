@@ -246,7 +246,7 @@
 .contact-channel-card__btn:hover {
   border-color: var(--contact-ink);
   background: var(--contact-ink);
-  color: var(--inverse, #fffaf3);
+  color: var(--contact-paper);
 }
 
 .contact-channel-card__btn.is-primary-btn {
@@ -256,8 +256,8 @@
 }
 
 .contact-channel-card__btn.is-primary-btn:hover {
-  border-color: var(--contact-blue-dark);
-  background: var(--contact-blue-dark);
+  border-color: var(--cobalt-dark);
+  background: var(--cobalt-dark);
 }
 
 .contact-social-section {
@@ -340,7 +340,7 @@
 
 .contact-info-panel--dark {
   border-color: var(--divider-dark, #3e3039);
-  background: var(--contact-ink);
+  background: #1d1319;
   color: var(--inverse, #fffaf3);
 }
 
