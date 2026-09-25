@@ -78,6 +78,24 @@ test("admin accepts the configured Vercel origin through the proxy and rejects o
   assert.equal((await login("https://rebeltattoos.vercel.app", "cross-site")).status, 403);
 });
 
+test("old public Site pages redirect to the Vercel address while API paths stay on the backend", async () => {
+  const env = configuredEnv({
+    PUBLIC_SITE_URL: "https://rebeltattoos.vercel.app",
+    ASSETS: { fetch: async () => new Response("old app shell") },
+  });
+  const document = await worker.fetch(new Request(
+    "https://rebel-tattoos-accra.hz5ycts27d.chatgpt.site/booking?source=old-link",
+    { headers: { Accept: "text/html" } },
+  ), env);
+  assert.equal(document.status, 308);
+  assert.equal(document.headers.get("Location"), "https://rebeltattoos.vercel.app/booking?source=old-link");
+
+  const api = await worker.fetch(new Request(
+    "https://rebel-tattoos-accra.hz5ycts27d.chatgpt.site/api/admin/session",
+  ), env);
+  assert.equal(api.status, 401);
+});
+
 function createIdFactory(ids) {
   let index = 0;
   return () => ids[index++] || `generated-id-${index}`;

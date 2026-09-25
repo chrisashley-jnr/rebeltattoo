@@ -550,6 +550,19 @@ export function createWorker(overrides = {}) {
         && !pathname.startsWith("/assets/")
         && !/\/[^/]+\.[^/]+$/.test(pathname);
       if (isDocumentRoute) {
+        const currentUrl = new URL(request.url);
+        if (currentUrl.hostname === "rebel-tattoos-accra.hz5ycts27d.chatgpt.site") {
+          try {
+            const publicUrl = new URL(env.PUBLIC_SITE_URL);
+            if (publicUrl.protocol === "https:" && publicUrl.origin !== currentUrl.origin) {
+              currentUrl.protocol = publicUrl.protocol;
+              currentUrl.host = publicUrl.host;
+              return Response.redirect(currentUrl, 308);
+            }
+          } catch {
+            // Serve the current site if the public URL is not configured.
+          }
+        }
         const appUrl = new URL(request.url);
         appUrl.pathname = "/";
         appUrl.search = "";
