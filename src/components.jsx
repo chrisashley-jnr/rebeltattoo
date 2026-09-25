@@ -113,7 +113,7 @@ export function GalleryCard({ item, format = item.format, onOpen }) {
   const content = (
     <>
       <span className="gallery-card__media">
-        <img src={item.image} alt={item.alt} />
+        <img src={item.image} alt={item.alt} width="1122" height="1402" loading="lazy" decoding="async" />
         <span className="gallery-card__hover">View piece</span>
       </span>
       <span className="gallery-card__caption">

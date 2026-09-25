@@ -358,7 +358,7 @@ export function BookingPage() {
               </div>
             </div>
             <figure className="booking-hero__media">
-              <img src={images.hero} alt="Michelle preparing equipment for a private tattoo session" />
+              <img src={images.hero} alt="Michelle preparing equipment for a private tattoo session" width="1586" height="992" decoding="async" />
               <figcaption>Home service only</figcaption>
             </figure>
           </div>

@@ -47,7 +47,7 @@ export function LandingPage() {
           </div>
 
           <div className="home-hero__visual">
-            <img src={images.hero} alt="Michelle, fine-line tattoo artist preparing for home sessions" />
+            <img src={images.hero} alt="Michelle, fine-line tattoo artist preparing for home sessions" width="1586" height="992" fetchPriority="high" decoding="async" />
             <div className="home-hero__stamp" aria-hidden="true">
               <span>Home service · calm · considered</span>
             </div>

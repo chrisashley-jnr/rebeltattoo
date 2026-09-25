@@ -106,7 +106,7 @@ export function ContactPage() {
               </div>
             </div>
             <figure className="contact-hero__media">
-              <img src={images.hero} alt="Michelle, fine-line tattoo artist" />
+              <img src={images.hero} alt="Michelle, fine-line tattoo artist" width="1586" height="992" decoding="async" />
               <figcaption>Home service only</figcaption>
             </figure>
           </div>

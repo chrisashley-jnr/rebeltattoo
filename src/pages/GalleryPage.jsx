@@ -201,7 +201,7 @@ export function GalleryPage() {
             </button>
 
             <div className="portfolio-lightbox__media">
-              <img src={selectedItem.image} alt={selectedItem.alt} />
+              <img src={selectedItem.image} alt={selectedItem.alt} width="1122" height="1402" decoding="async" />
             </div>
 
             <div className="portfolio-lightbox__caption">

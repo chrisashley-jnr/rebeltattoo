@@ -8,12 +8,12 @@ export const navItems = [
 ];
 
 export const images = {
-  hero: "/assets/hero-botanical-portrait.png",
-  studio: "/assets/studio-interior.png",
-  sunMoon: "/assets/sun-moon-forearm.png",
-  botanicalBack: "/assets/botanical-upper-back.png",
-  tiger: "/assets/tattoo-blackwork-tiger.png",
-  heron: "/assets/tattoo-heron-botanical.png",
+  hero: "/assets/hero-botanical-portrait.avif",
+  studio: "/assets/studio-interior.avif",
+  sunMoon: "/assets/sun-moon-forearm.avif",
+  botanicalBack: "/assets/botanical-upper-back.avif",
+  tiger: "/assets/tattoo-blackwork-tiger.avif",
+  heron: "/assets/tattoo-heron-botanical.avif",
 };
 
 export const portfolioItems = [

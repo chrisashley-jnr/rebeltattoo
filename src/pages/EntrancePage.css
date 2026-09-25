@@ -7,7 +7,7 @@
   overflow: hidden;
   isolation: isolate;
   color: #fff;
-  background: #09090d url("/assets/entrance-studio.png") center center / cover no-repeat;
+  background: #09090d url("/assets/entrance-studio.jpg") center center / cover no-repeat;
 }
 
 .entrance__shade {
