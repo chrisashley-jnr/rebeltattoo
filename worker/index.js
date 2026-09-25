@@ -148,10 +148,16 @@ function expiredSessionCookie(request) {
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${secure}`;
 }
 
-function isSameOrigin(request) {
+function isSameOrigin(request, env) {
   if (request.headers.get("Sec-Fetch-Site") === "cross-site") return false;
   const origin = request.headers.get("Origin");
-  return !origin || origin === new URL(request.url).origin;
+  if (!origin || origin === new URL(request.url).origin) return true;
+  try {
+    const publicSite = new URL(env.PUBLIC_SITE_URL);
+    return publicSite.protocol === "https:" && origin === publicSite.origin;
+  } catch {
+    return false;
+  }
 }
 
 async function readJson(request) {
@@ -351,7 +357,7 @@ async function requireAdmin(request, env, dependencies) {
 
 async function handleSession(request, env, dependencies) {
   if (!sessionConfigurationReady(env)) return errorResponse("Admin access is not configured yet.", 503);
-  if (["POST", "DELETE"].includes(request.method) && !isSameOrigin(request)) {
+  if (["POST", "DELETE"].includes(request.method) && !isSameOrigin(request, env)) {
     return errorResponse("This request must come from the same site.", 403);
   }
 
@@ -407,7 +413,7 @@ async function handleSession(request, env, dependencies) {
 async function handleAdminApi(request, env, dependencies, pathname) {
   const unauthorized = await requireAdmin(request, env, dependencies);
   if (unauthorized) return unauthorized;
-  if (["POST", "PATCH", "DELETE"].includes(request.method) && !isSameOrigin(request)) {
+  if (["POST", "PATCH", "DELETE"].includes(request.method) && !isSameOrigin(request, env)) {
     return errorResponse("This request must come from the same site.", 403);
   }
   const store = dependencies.storeFactory(env);

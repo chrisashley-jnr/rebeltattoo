@@ -1,11 +1,11 @@
 {
   "buildCommand": "vite build",
   "outputDirectory": "dist/client",
-  "redirects": [
+  "rewrites": [
     {
-      "source": "/:path((?!api/email-relay$).*)",
-      "destination": "https://rebel-tattoos-accra.hz5ycts27d.chatgpt.site/:path",
-      "permanent": false
-    }
+      "source": "/api/:path*",
+      "destination": "https://rebel-tattoos-accra.hz5ycts27d.chatgpt.site/api/:path*"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

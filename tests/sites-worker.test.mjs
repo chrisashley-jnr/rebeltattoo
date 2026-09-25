@@ -15,7 +15,6 @@ import { buildMimeMessage } from "../worker/smtp.js";
 import { createEmailRelay, verifyRelayEnvelope } from "../api/email-relay.js";
 import worker, { createWorker } from "../worker/index.js";
 import { createDevBindings } from "../worker/dev-adapter.js";
-import legacyBookingHandler from "../api/bookings.js";
 
 const FIXED_NOW = "2026-09-22T12:00:00.000Z";
 const FIXED_NOW_MS = Date.parse(FIXED_NOW);
@@ -48,17 +47,35 @@ test("local development URLs are omitted from booking emails", () => {
   assert.doesNotMatch(records[1].body, /localhost/i);
 });
 
-test("legacy deployment rejects bookings it cannot persist", () => {
-  const headers = {};
-  const response = {
-    setHeader(name, value) { headers[name.toLowerCase()] = value; },
-    status(code) { this.statusCode = code; return this; },
-    json(payload) { this.payload = payload; return this; },
-  };
-  legacyBookingHandler({ method: "POST" }, response);
-  assert.equal(response.statusCode, 503);
-  assert.match(response.payload.error, /unavailable/);
-  assert.equal(headers["content-type"], "application/json; charset=utf-8");
+test("Vercel serves the app and proxies booking routes to the existing backend", async () => {
+  const config = JSON.parse(await readFile(new URL("../vercel.json", import.meta.url), "utf8"));
+  assert.equal(config.outputDirectory, "dist/client");
+  assert.deepEqual(config.rewrites, [
+    {
+      source: "/api/:path*",
+      destination: "https://rebel-tattoos-accra.hz5ycts27d.chatgpt.site/api/:path*",
+    },
+    { source: "/(.*)", destination: "/index.html" },
+  ]);
+  await assert.rejects(access(new URL("../api/bookings.js", import.meta.url)));
+});
+
+test("admin accepts the configured Vercel origin through the proxy and rejects other origins", async () => {
+  const { store } = createFakeStore();
+  const api = createWorker({ storeFactory: () => store, nowMs: () => FIXED_NOW_MS });
+  const env = configuredEnv({ PUBLIC_SITE_URL: "https://rebeltattoos.vercel.app" });
+  const login = (origin, fetchSite = "same-origin") => api.fetch(new Request(
+    "https://rebel-tattoos-accra.hz5ycts27d.chatgpt.site/api/admin/session",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: origin, "Sec-Fetch-Site": fetchSite },
+      body: JSON.stringify({ password: env.ADMIN_PASSWORD }),
+    },
+  ), env);
+
+  assert.equal((await login("https://rebeltattoos.vercel.app")).status, 200);
+  assert.equal((await login("https://attacker.example.test")).status, 403);
+  assert.equal((await login("https://rebeltattoos.vercel.app", "cross-site")).status, 403);
 });
 
 function createIdFactory(ids) {

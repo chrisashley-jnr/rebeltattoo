@@ -22,7 +22,7 @@ For an offline sample-data preview, start Vite with `VITE_DEMO_MODE=true`. That 
 
 ## Production configuration
 
-Set hosted runtime values in the Site's settings. Use `.dev.vars.example` for local development and as a list of keys:
+The public website runs at `https://rebeltattoos.vercel.app`. Vercel serves the Vite build and proxies `/api/*` to the existing Sites Worker; its `/api/email-relay` function remains local to Vercel. Booking records and uploads stay on Sites. Set the backend runtime values in the Site's settings. Use `.dev.vars.example` for local development and as a list of keys:
 
 - `ADMIN_PASSWORD`: private dashboard password.
 - `SESSION_SECRET`: a long random signing secret.
@@ -31,11 +31,11 @@ Set hosted runtime values in the Site's settings. Use `.dev.vars.example` for lo
 - `EMAIL_RELAY_SECRET`: the same random secret (at least 32 characters) on Sites and Vercel.
 - `EMAIL_FROM` and `RESEND_API_KEY`: alternative Resend settings that require a verified sending domain.
 - `SMTP_USER`, `SMTP_PASS`, and `SMTP_HOST`: optional Gmail SMTP settings for local development only.
-- `PUBLIC_SITE_URL`: final public site URL, used in admin notification links.
+- `PUBLIC_SITE_URL`: `https://rebeltattoos.vercel.app`, used in admin notification links and to allow same-origin admin writes through Vercel's proxy.
 
 Use a public HTTPS address for `PUBLIC_SITE_URL`. Localhost links are omitted from outgoing messages. Sites does not support raw SMTP sockets. To send from Gmail without a custom domain, configure the signed HTTPS relay on the existing Vercel project with `SMTP_USER=rebeltattoo101@gmail.com`, a Gmail app password in `SMTP_PASS`, and the same `EMAIL_RELAY_SECRET` as Sites. Keep these credentials in server environment settings, never in frontend code. The relay accepts only fresh HMAC-signed requests and always sends from the configured Gmail account. Gmail still applies sending limits, and no sender can guarantee placement in the main inbox. For the Resend alternative, configure the SPF, DKIM, and DMARC records required by the mail provider.
 
-Deploy the Sites build with its `DB` (D1) and `UPLOADS` (R2) bindings and apply every migration in `.openai/drizzle`, including `0002_admin_security.sql`. The Vercel deployment redirects visitors to the Sites deployment, where bookings can be persisted for the dashboard. Do not place real credentials in frontend code or commit them to the project. Without email credentials, bookings are still saved and the dashboard remains usable; email records are marked as not configured instead of pretending they were sent.
+Deploy the Sites build with its `DB` (D1) and `UPLOADS` (R2) bindings and apply every migration in `.openai/drizzle`, including `0002_admin_security.sql`. Deploy the Vercel project from this repository so its static pages and reverse proxy use the same release. Do not place real credentials in frontend code or commit them to the project. Without email credentials, bookings are still saved and the dashboard remains usable; email records are marked as not configured instead of pretending they were sent.
 
 ## Useful commands
 
