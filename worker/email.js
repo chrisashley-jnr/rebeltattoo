@@ -5,6 +5,7 @@ import {
   safeSiteUrl,
 } from "./email-template.js";
 import { sendSmtpEmail } from "./smtp.js";
+import { createSignedRelayRequest, getEmailRelayConfig } from "./email-relay.js";
 
 function cleanLine(value, max = 180) {
   return String(value || "").replace(/[\r\n]+/g, " ").trim().slice(0, max);
@@ -52,7 +53,7 @@ export function emailDeliveryConfigured(env = {}) {
   const hasResend = Boolean(cleanLine(env.RESEND_API_KEY, 500) && validEmail(env.EMAIL_FROM));
   const { configured: hasSmtp, user: smtpUser } = getSmtpConfig(env);
   const effectiveFrom = validEmail(env.EMAIL_FROM) ? env.EMAIL_FROM : smtpUser;
-  return hasResend || (hasSmtp && validEmail(effectiveFrom));
+  return getEmailRelayConfig(env).configured || hasResend || (hasSmtp && validEmail(effectiveFrom));
 }
 
 export function createBookingEmailRecords(booking, env, now, randomUUID) {
@@ -148,6 +149,7 @@ export function createManualEmailRecords({ booking, audience, subject, body, env
 export async function deliverEmailRecords(records, env, store, emailFetch = fetch, sendSmtp = sendSmtpEmail) {
   const results = [];
   const smtpConfig = getSmtpConfig(env);
+  const relayConfig = getEmailRelayConfig(env);
   const effectiveFrom = getEffectiveFrom(env);
 
   for (const record of records) {
@@ -172,7 +174,25 @@ export async function deliverEmailRecords(records, env, store, emailFetch = fetc
 
     let result;
     try {
-      if (smtpConfig.configured) {
+      if (relayConfig.configured) {
+        const envelope = await createSignedRelayRequest(record, relayConfig.secret);
+        const response = await emailFetch(relayConfig.url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(envelope),
+          signal: AbortSignal.timeout(20_000),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || `Email relay returned ${response.status}.`);
+        result = {
+          bookingId: record.bookingId,
+          audience: record.audience,
+          status: "sent",
+          attempted: true,
+          providerMessageId: payload.id || null,
+          sentAt: new Date().toISOString(),
+        };
+      } else if (smtpConfig.configured) {
         const smtpResult = await sendSmtp({
           host: smtpConfig.host,
           port: smtpConfig.port,

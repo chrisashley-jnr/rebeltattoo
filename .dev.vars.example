@@ -4,11 +4,17 @@ SESSION_SECRET=replace-with-at-least-32-random-characters
 PUBLIC_SITE_URL=https://your-site.example
 ADMIN_EMAIL=rebeltattoo101@gmail.com
 
-# Option A: Resend for hosted Sites (verified sending domain required)
+# Option A: Gmail SMTP through the signed Vercel relay (no custom domain)
+# Set both values on the Site. Set EMAIL_RELAY_SECRET, SMTP_USER, and SMTP_PASS
+# on the Vercel project, too. Keep the relay secret at least 32 random characters.
+# EMAIL_RELAY_URL=https://rebeltattoo.vercel.app/api/email-relay
+# EMAIL_RELAY_SECRET=replace-with-at-least-32-random-characters
+
+# Option B: Resend for hosted Sites (verified sending domain required)
 # RESEND_API_KEY=re_replace_me
 # EMAIL_FROM=Rebel Tattoos <bookings@yourverifieddomain.com>
 
-# Option B: Gmail SMTP for local development only
+# Option C: Gmail SMTP for local development only
 # SMTP_HOST=smtp.gmail.com
 # SMTP_PORT=465
 # SMTP_USER=rebeltattoo101@gmail.com

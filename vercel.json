@@ -3,8 +3,8 @@
   "outputDirectory": "dist/client",
   "redirects": [
     {
-      "source": "/(.*)",
-      "destination": "https://rebel-tattoos-accra.hz5ycts27d.chatgpt.site/$1",
+      "source": "/:path((?!api/email-relay$).*)",
+      "destination": "https://rebel-tattoos-accra.hz5ycts27d.chatgpt.site/:path",
       "permanent": false
     }
   ]

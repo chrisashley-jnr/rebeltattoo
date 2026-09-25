@@ -17,7 +17,7 @@ For an offline sample-data preview, start Vite with `VITE_DEMO_MODE=true`. That 
 - Booking details are stored in D1.
 - Reference images are stored privately in R2 and are only served through authenticated admin routes.
 - `/admin` uses an eight-hour signed, HTTP-only, same-site session cookie. Sessions are checked against storage and revoked on sign-out. Sign-in is rate limited, and admin writes require the same origin.
-- Automatic booking acknowledgements and dashboard-composed emails use Resend when configured. Every message includes a responsive, branded HTML design plus a complete plain-text fallback.
+- Automatic booking acknowledgements and dashboard-composed emails use the signed Gmail relay or Resend when configured. Every message includes a responsive, branded HTML design plus a complete plain-text fallback.
 - The public form is validated on both the page and server, includes a honeypot, caps file type/size/count, and rate-limits repeated submissions by email.
 
 ## Production configuration
@@ -27,12 +27,13 @@ Set hosted runtime values in the Site's settings. Use `.dev.vars.example` for lo
 - `ADMIN_PASSWORD`: private dashboard password.
 - `SESSION_SECRET`: a long random signing secret.
 - `ADMIN_EMAIL`: the studio inbox that receives booking alerts (e.g. `rebeltattoo101@gmail.com`).
-- `EMAIL_FROM`: address on a domain verified with the hosted email provider.
-- `RESEND_API_KEY`: production email provider API key for Sites.
+- `EMAIL_RELAY_URL`: `https://rebeltattoo.vercel.app/api/email-relay` for Gmail sending through Vercel.
+- `EMAIL_RELAY_SECRET`: the same random secret (at least 32 characters) on Sites and Vercel.
+- `EMAIL_FROM` and `RESEND_API_KEY`: alternative Resend settings that require a verified sending domain.
 - `SMTP_USER`, `SMTP_PASS`, and `SMTP_HOST`: optional Gmail SMTP settings for local development only.
 - `PUBLIC_SITE_URL`: final public site URL, used in admin notification links.
 
-Use a public HTTPS address for `PUBLIC_SITE_URL`. Localhost links are omitted from outgoing messages. Sites does not support raw SMTP sockets, so hosted booking emails require the HTTP-based Resend integration and a verified sending domain. For that domain, configure the SPF, DKIM, and DMARC records required by the mail provider. A provider accepting an email does not guarantee that a recipient's spam filter will place it in the main inbox.
+Use a public HTTPS address for `PUBLIC_SITE_URL`. Localhost links are omitted from outgoing messages. Sites does not support raw SMTP sockets. To send from Gmail without a custom domain, configure the signed HTTPS relay on the existing Vercel project with `SMTP_USER=rebeltattoo101@gmail.com`, a Gmail app password in `SMTP_PASS`, and the same `EMAIL_RELAY_SECRET` as Sites. Keep these credentials in server environment settings, never in frontend code. The relay accepts only fresh HMAC-signed requests and always sends from the configured Gmail account. Gmail still applies sending limits, and no sender can guarantee placement in the main inbox. For the Resend alternative, configure the SPF, DKIM, and DMARC records required by the mail provider.
 
 Deploy the Sites build with its `DB` (D1) and `UPLOADS` (R2) bindings and apply every migration in `.openai/drizzle`, including `0002_admin_security.sql`. The Vercel deployment redirects visitors to the Sites deployment, where bookings can be persisted for the dashboard. Do not place real credentials in frontend code or commit them to the project. Without email credentials, bookings are still saved and the dashboard remains usable; email records are marked as not configured instead of pretending they were sent.
 

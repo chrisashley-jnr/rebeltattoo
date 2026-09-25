@@ -9,8 +9,10 @@ import {
   renderAdminBookingEmail,
   renderManualEmail,
 } from "../worker/email-template.js";
-import { createBookingEmailRecords } from "../worker/email.js";
+import { createBookingEmailRecords, deliverEmailRecords, emailDeliveryConfigured } from "../worker/email.js";
+import { createSignedRelayRequest, getEmailRelayConfig } from "../worker/email-relay.js";
 import { buildMimeMessage } from "../worker/smtp.js";
+import { createEmailRelay, verifyRelayEnvelope } from "../api/email-relay.js";
 import worker, { createWorker } from "../worker/index.js";
 import { createDevBindings } from "../worker/dev-adapter.js";
 import legacyBookingHandler from "../api/bookings.js";
@@ -694,6 +696,91 @@ test("creates a booking and delivers emails via Gmail SMTP", async () => {
   assert.equal(smtpCalls[0].from, "Rebel Tattoos <rebeltattoo101@gmail.com>");
   assert.equal(smtpCalls[1].to, "rebeltattoo101@gmail.com");
   assert.match(smtpCalls[0].html, /Your idea is in/);
+});
+
+test("Gmail relay signs and delivers both booking messages without exposing SMTP credentials to Sites", async () => {
+  const secret = "a-very-long-random-relay-secret-for-testing";
+  const siteEnv = {
+    ADMIN_EMAIL: "studio@gmail.com",
+    EMAIL_RELAY_URL: "https://rebeltattoo.vercel.app/api/email-relay",
+    EMAIL_RELAY_SECRET: secret,
+    PUBLIC_SITE_URL: "https://example.test",
+  };
+  const relayEnv = {
+    EMAIL_RELAY_SECRET: secret,
+    SMTP_USER: "studio@gmail.com",
+    SMTP_PASS: "test-app-password",
+  };
+  const sent = [];
+  const relay = createEmailRelay(async (message) => {
+    sent.push(message);
+    return { messageId: `gmail-${sent.length}` };
+  }, relayEnv);
+  const { state, store } = createFakeStore();
+  const records = createBookingEmailRecords(bookingFixture(), siteEnv, FIXED_NOW, createIdFactory([
+    "email-booker-0001", "email-admin-0002",
+  ]));
+  const fetched = [];
+  const emailFetch = async (url, options) => {
+    fetched.push({ url, options });
+    const response = {
+      setHeader() {},
+      status(value) { this.statusCode = value; return this; },
+      json(value) { this.payload = value; return this; },
+    };
+    await relay({ method: "POST", body: JSON.parse(options.body), headers: {} }, response);
+    return Response.json(response.payload, { status: response.statusCode });
+  };
+
+  assert.equal(emailDeliveryConfigured(siteEnv), true);
+  assert.equal(getEmailRelayConfig({ ...siteEnv, EMAIL_RELAY_URL: "http://localhost:3000/mail" }).configured, false);
+  const result = await deliverEmailRecords(records, siteEnv, store, emailFetch);
+  assert.deepEqual(result.map((entry) => entry.status), ["sent", "sent"]);
+  assert.equal(sent.length, 2);
+  assert.equal(sent[0].to, "ama@example.test");
+  assert.equal(sent[1].to, "studio@gmail.com");
+  assert.equal(sent[0].from, "Rebel Tattoos <studio@gmail.com>");
+  assert.equal(sent[0].replyTo, "studio@gmail.com");
+  assert.equal(sent[1].replyTo, "ama@example.test");
+  assert.match(sent[0].html, /Your idea is in/);
+  assert.deepEqual(state.emailUpdates.map((entry) => entry.status), ["sent", "sent"]);
+  assert.ok(fetched.every(({ url }) => url === siteEnv.EMAIL_RELAY_URL));
+  assert.ok(fetched.every(({ options }) => !options.body.includes("test-app-password")));
+});
+
+test("Gmail relay rejects tampering, old signatures, invalid mail, and direct browser requests", async () => {
+  const secret = "a-very-long-random-relay-secret-for-testing";
+  const record = createBookingEmailRecords(bookingFixture(), {
+    ADMIN_EMAIL: "studio@gmail.com",
+    EMAIL_RELAY_URL: "https://rebeltattoo.vercel.app/api/email-relay",
+    EMAIL_RELAY_SECRET: secret,
+  }, FIXED_NOW, createIdFactory(["email-booker-0001", "email-admin-0002"]))[0];
+  const envelope = await createSignedRelayRequest(record, secret, FIXED_NOW_MS);
+  assert.equal(verifyRelayEnvelope(envelope, secret, FIXED_NOW_MS).to, record.recipientEmail);
+  assert.equal(verifyRelayEnvelope({ ...envelope, payload: envelope.payload.replace("ama@", "eve@") }, secret, FIXED_NOW_MS), null);
+  assert.equal(verifyRelayEnvelope(envelope, secret, FIXED_NOW_MS + 6 * 60 * 1000), null);
+  const badRecipient = await createSignedRelayRequest({ ...record, recipientEmail: "not-an-email" }, secret, FIXED_NOW_MS);
+  assert.equal(verifyRelayEnvelope(badRecipient, secret, FIXED_NOW_MS), null);
+
+  let sent = 0;
+  const relay = createEmailRelay(async () => { sent += 1; return { messageId: "gmail-1" }; }, {
+    EMAIL_RELAY_SECRET: secret,
+    SMTP_USER: "studio@gmail.com",
+    SMTP_PASS: "test-app-password",
+  });
+  async function request(method, body) {
+    const response = {
+      setHeader() {},
+      status(value) { this.statusCode = value; return this; },
+      json(value) { this.payload = value; return this; },
+    };
+    await relay({ method, body, headers: {} }, response);
+    return response;
+  }
+  assert.equal((await request("GET", null)).statusCode, 405);
+  assert.equal((await request("POST", { ...envelope, signature: "0".repeat(64) })).statusCode, 401);
+  assert.equal((await request("POST", "{" )).statusCode, 400);
+  assert.equal(sent, 0);
 });
 
 test("admin rejects anonymous access, throttles failed logins, and revokes logout sessions", async () => {
