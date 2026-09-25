@@ -22,19 +22,17 @@ For an offline sample-data preview, start Vite with `VITE_DEMO_MODE=true`. That 
 
 ## Production configuration
 
-Use `.dev.vars.example` as the list of required settings:
+Set hosted runtime values in the Site's settings. Use `.dev.vars.example` for local development and as a list of keys:
 
 - `ADMIN_PASSWORD`: private dashboard password.
 - `SESSION_SECRET`: a long random signing secret.
 - `ADMIN_EMAIL`: the studio inbox that receives booking alerts (e.g. `rebeltattoo101@gmail.com`).
-- `EMAIL_FROM`: sender address, e.g. `Rebel Tattoos <rebeltattoo101@gmail.com>`.
-- `SMTP_USER`: Gmail address (e.g. `rebeltattoo101@gmail.com`).
-- `SMTP_PASS`: 16-character Google App Password.
-- `SMTP_HOST`: `smtp.gmail.com` (port 465 SSL).
-- `RESEND_API_KEY`: alternative email provider API key (if using Resend instead of Gmail SMTP).
+- `EMAIL_FROM`: address on a domain verified with the hosted email provider.
+- `RESEND_API_KEY`: production email provider API key for Sites.
+- `SMTP_USER`, `SMTP_PASS`, and `SMTP_HOST`: optional Gmail SMTP settings for local development only.
 - `PUBLIC_SITE_URL`: final public site URL, used in admin notification links.
 
-Use a public HTTPS address for `PUBLIC_SITE_URL`. Localhost links are omitted from outgoing messages. With Gmail SMTP, set `EMAIL_FROM` to the authenticated Gmail address. For a custom sending domain, configure its SPF, DKIM, and DMARC records with the mail provider. A provider accepting an email does not guarantee that a recipient's spam filter will place it in the main inbox.
+Use a public HTTPS address for `PUBLIC_SITE_URL`. Localhost links are omitted from outgoing messages. Sites does not support raw SMTP sockets, so hosted booking emails require the HTTP-based Resend integration and a verified sending domain. For that domain, configure the SPF, DKIM, and DMARC records required by the mail provider. A provider accepting an email does not guarantee that a recipient's spam filter will place it in the main inbox.
 
 Deploy the Sites build with its `DB` (D1) and `UPLOADS` (R2) bindings and apply every migration in `.openai/drizzle`, including `0002_admin_security.sql`. The older Vercel function now returns HTTP 503 because it cannot persist bookings for the dashboard. Do not place real credentials in frontend code or commit them to the project. Without email credentials, bookings are still saved and the dashboard remains usable; email records are marked as not configured instead of pretending they were sent.
 

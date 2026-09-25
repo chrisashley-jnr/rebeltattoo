@@ -2,16 +2,15 @@
 ADMIN_PASSWORD=replace-with-a-long-unique-passphrase
 SESSION_SECRET=replace-with-at-least-32-random-characters
 PUBLIC_SITE_URL=https://your-site.example
-
-# Option A: Gmail SMTP Configuration (Recommended)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_USER=rebeltattoo101@gmail.com
-SMTP_PASS=your-16-char-app-password
-EMAIL_FROM=Rebel Tattoos <rebeltattoo101@gmail.com>
 ADMIN_EMAIL=rebeltattoo101@gmail.com
 
-# Option B: Resend Configuration (Alternative)
+# Option A: Resend for hosted Sites (verified sending domain required)
 # RESEND_API_KEY=re_replace_me
 # EMAIL_FROM=Rebel Tattoos <bookings@yourverifieddomain.com>
-# ADMIN_EMAIL=bookings@yourverifieddomain.com
+
+# Option B: Gmail SMTP for local development only
+# SMTP_HOST=smtp.gmail.com
+# SMTP_PORT=465
+# SMTP_USER=rebeltattoo101@gmail.com
+# SMTP_PASS=your-16-char-app-password
+# EMAIL_FROM=Rebel Tattoos <rebeltattoo101@gmail.com>
