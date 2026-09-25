@@ -61,9 +61,11 @@ function validateField(name, value) {
       if (!value.trim()) return "Enter an email address so we can reply.";
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? "" : "Enter a complete email address, such as name@example.com.";
     case "phone": {
-      if (!value.trim()) return "";
+      if (!value.trim()) return "Enter a phone number for appointment coordination.";
       const digits = value.replace(/\D/g, "");
-      return digits.length >= 7 && digits.length <= 15 ? "" : "Enter a phone number with 7–15 digits, or leave this blank.";
+      return /^\+?[\d\s().-]{7,30}$/.test(value) && digits.length >= 7 && digits.length <= 15
+        ? ""
+        : "Enter a phone number with 7–15 digits.";
     }
     case "tattooIdea":
       return value.trim().length >= 20 ? "" : "Share at least a sentence about the story, style, or feeling.";
@@ -427,12 +429,13 @@ export function BookingPage() {
                   <TextField
                     area="phone"
                     id="phone"
-                    label="Phone number (optional)"
+                    label="Phone number"
                     helper="For appointment coordination &amp; WhatsApp updates."
                     type="tel"
                     inputMode="tel"
                     placeholder="+233 / your number"
                     autoComplete="tel"
+                    required
                     {...commonFieldProps("phone")}
                   />
                   <TextField

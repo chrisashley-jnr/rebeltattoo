@@ -190,7 +190,10 @@ function validateBooking(fields, today) {
   const errors = {};
   if (fields.fullName.length < 2) errors.fullName = "Enter the name you use for bookings.";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) errors.email = "Enter a complete email address.";
-  if (fields.phone && !/^\+?[\d\s().-]{7,30}$/.test(fields.phone)) errors.phone = "Enter a valid phone number or leave this blank.";
+  const phoneDigits = fields.phone.replace(/\D/g, "");
+  if (!fields.phone || !/^\+?[\d\s().-]{7,30}$/.test(fields.phone) || phoneDigits.length < 7 || phoneDigits.length > 15) {
+    errors.phone = "Enter a phone number with 7–15 digits.";
+  }
   if (fields.tattooIdea.length < 20) errors.tattooIdea = "Share at least a sentence about your idea.";
   for (const field of ["placement", "size", "style", "ink", "budget"]) {
     if (!fields[field]) errors[field] = "Choose an option.";

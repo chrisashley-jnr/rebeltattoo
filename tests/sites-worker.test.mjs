@@ -379,6 +379,30 @@ test("rejects a preferred date in the past", async () => {
   assert.equal(state.createdBookings.length, 0);
 });
 
+test("rejects a booking without a valid phone number before saving it", async () => {
+  const { state, store } = createFakeStore();
+  const api = createWorker({
+    storeFactory: () => store,
+    now: () => FIXED_NOW,
+    nowMs: () => FIXED_NOW_MS,
+  });
+
+  for (const phone of ["", "123456", "1234567890123456", "call-me-1234567"]) {
+    const form = validBookingForm();
+    form.set("phone", phone);
+    const response = await api.fetch(new Request("https://example.test/api/bookings", {
+      method: "POST",
+      body: form,
+    }), configuredEnv());
+    const payload = await response.json();
+    assert.equal(response.status, 422);
+    assert.match(payload.fields.phone, /phone number/i);
+  }
+
+  assert.equal(state.createdBookings.length, 0);
+  assert.equal(state.createdEmails.length, 0);
+});
+
 test("returns a JSON 404 for an unknown API route without consulting static assets", async () => {
   let assetCalls = 0;
   const api = createWorker();
