@@ -34,7 +34,7 @@ Set hosted runtime values in the Site's settings. Use `.dev.vars.example` for lo
 
 Use a public HTTPS address for `PUBLIC_SITE_URL`. Localhost links are omitted from outgoing messages. Sites does not support raw SMTP sockets, so hosted booking emails require the HTTP-based Resend integration and a verified sending domain. For that domain, configure the SPF, DKIM, and DMARC records required by the mail provider. A provider accepting an email does not guarantee that a recipient's spam filter will place it in the main inbox.
 
-Deploy the Sites build with its `DB` (D1) and `UPLOADS` (R2) bindings and apply every migration in `.openai/drizzle`, including `0002_admin_security.sql`. The older Vercel function now returns HTTP 503 because it cannot persist bookings for the dashboard. Do not place real credentials in frontend code or commit them to the project. Without email credentials, bookings are still saved and the dashboard remains usable; email records are marked as not configured instead of pretending they were sent.
+Deploy the Sites build with its `DB` (D1) and `UPLOADS` (R2) bindings and apply every migration in `.openai/drizzle`, including `0002_admin_security.sql`. The Vercel deployment redirects visitors to the Sites deployment, where bookings can be persisted for the dashboard. Do not place real credentials in frontend code or commit them to the project. Without email credentials, bookings are still saved and the dashboard remains usable; email records are marked as not configured instead of pretending they were sent.
 
 ## Useful commands
 
