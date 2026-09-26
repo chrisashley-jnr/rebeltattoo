@@ -152,12 +152,15 @@ function isSameOrigin(request, env) {
   if (request.headers.get("Sec-Fetch-Site") === "cross-site") return false;
   const origin = request.headers.get("Origin");
   if (!origin || origin === new URL(request.url).origin) return true;
-  try {
-    const publicSite = new URL(env.PUBLIC_SITE_URL);
-    return publicSite.protocol === "https:" && origin === publicSite.origin;
-  } catch {
-    return false;
+  for (const configuredUrl of [env?.PUBLIC_SITE_URL, env?.LEGACY_PUBLIC_SITE_URL]) {
+    try {
+      const site = new URL(configuredUrl);
+      if (site.protocol === "https:" && origin === site.origin) return true;
+    } catch {
+      // Ignore an unset or invalid optional origin.
+    }
   }
+  return false;
 }
 
 async function readJson(request) {

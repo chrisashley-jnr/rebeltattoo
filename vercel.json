@@ -1,6 +1,14 @@
 {
   "buildCommand": "vite build",
   "outputDirectory": "dist/client",
+  "redirects": [
+    {
+      "source": "/:path((?!api/).*)",
+      "has": [{ "type": "host", "value": "rebeltattoo.vercel.app" }],
+      "destination": "https://rebeltattoos.vercel.app/:path",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",

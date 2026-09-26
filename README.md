@@ -32,6 +32,7 @@ The public website runs at `https://rebeltattoos.vercel.app`. Vercel serves the 
 - `EMAIL_FROM` and `RESEND_API_KEY`: alternative Resend settings that require a verified sending domain.
 - `SMTP_USER`, `SMTP_PASS`, and `SMTP_HOST`: optional Gmail SMTP settings for local development only.
 - `PUBLIC_SITE_URL`: `https://rebeltattoos.vercel.app`, used in admin notification links and to allow same-origin admin writes through Vercel's proxy.
+- `LEGACY_PUBLIC_SITE_URL`: `https://rebeltattoo.vercel.app`, accepted temporarily for visitors with the older address open while its pages redirect to the current address.
 
 Use a public HTTPS address for `PUBLIC_SITE_URL`. Localhost links are omitted from outgoing messages. Sites does not support raw SMTP sockets. To send from Gmail without a custom domain, configure the signed HTTPS relay on the existing Vercel project with `SMTP_USER=rebeltattoo101@gmail.com`, a Gmail app password in `SMTP_PASS`, and the same `EMAIL_RELAY_SECRET` as Sites. Keep these credentials in server environment settings, never in frontend code. The relay accepts only fresh HMAC-signed requests and always sends from the configured Gmail account. Gmail still applies sending limits, and no sender can guarantee placement in the main inbox. For the Resend alternative, configure the SPF, DKIM, and DMARC records required by the mail provider.
 

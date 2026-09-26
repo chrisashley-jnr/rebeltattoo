@@ -50,6 +50,12 @@ test("local development URLs are omitted from booking emails", () => {
 test("Vercel serves the app and proxies booking routes to the existing backend", async () => {
   const config = JSON.parse(await readFile(new URL("../vercel.json", import.meta.url), "utf8"));
   assert.equal(config.outputDirectory, "dist/client");
+  assert.deepEqual(config.redirects, [{
+    source: "/:path((?!api/).*)",
+    has: [{ type: "host", value: "rebeltattoo.vercel.app" }],
+    destination: "https://rebeltattoos.vercel.app/:path",
+    permanent: false,
+  }]);
   assert.deepEqual(config.rewrites, [
     {
       source: "/api/:path*",
@@ -441,7 +447,10 @@ test("rejects a booking without a valid phone number before saving it", async ()
 test("booking accepts the configured Vercel origin and still rejects foreign origins", async () => {
   const { state, store } = createFakeStore();
   const api = createWorker({ storeFactory: () => store, now: () => FIXED_NOW });
-  const env = configuredEnv({ PUBLIC_SITE_URL: "https://rebeltattoos.vercel.app" });
+  const env = configuredEnv({
+    PUBLIC_SITE_URL: "https://rebeltattoos.vercel.app",
+    LEGACY_PUBLIC_SITE_URL: "https://rebeltattoo.vercel.app",
+  });
   const request = (origin, fetchSite) => {
     const form = validBookingForm();
     form.set("phone", "");
@@ -455,6 +464,10 @@ test("booking accepts the configured Vercel origin and still rejects foreign ori
   const sameOrigin = await api.fetch(request("https://rebeltattoos.vercel.app", "same-origin"), env);
   assert.equal(sameOrigin.status, 422);
   assert.match((await sameOrigin.json()).fields.phone, /phone number/i);
+
+  const legacyOrigin = await api.fetch(request("https://rebeltattoo.vercel.app", "same-origin"), env);
+  assert.equal(legacyOrigin.status, 422);
+  assert.match((await legacyOrigin.json()).fields.phone, /phone number/i);
 
   const foreignOrigin = await api.fetch(request("https://attacker.example.test", "cross-site"), env);
   assert.equal(foreignOrigin.status, 403);
