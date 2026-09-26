@@ -103,7 +103,7 @@ function buildDemoBookings() {
       status: "confirmed",
       fullName: "Sample — Abena",
       email: "sample.abena@example.com",
-      phone: "+233 24 000 1027",
+      phone: "+233 55 404 3710",
       tattooIdea: "A heron surrounded by reeds, drawn with a mix of fine line and a few confident blackwork shapes.",
       placement: "Calf",
       size: "Larger piece",

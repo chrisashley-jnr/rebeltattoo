@@ -233,7 +233,7 @@ function queueTask(context, task) {
 }
 
 async function handleCreateBooking(request, env, context, dependencies) {
-  if (!isSameOrigin(request)) return errorResponse("This request must come from the same site.", 403);
+  if (!isSameOrigin(request, env)) return errorResponse("This request must come from the same site.", 403);
   if (Number(request.headers.get("Content-Length") || 0) > MAX_TOTAL_FILE_SIZE + 100_000) {
     return errorResponse("The booking request is too large.", 413);
   }

@@ -438,6 +438,29 @@ test("rejects a booking without a valid phone number before saving it", async ()
   assert.equal(state.createdEmails.length, 0);
 });
 
+test("booking accepts the configured Vercel origin and still rejects foreign origins", async () => {
+  const { state, store } = createFakeStore();
+  const api = createWorker({ storeFactory: () => store, now: () => FIXED_NOW });
+  const env = configuredEnv({ PUBLIC_SITE_URL: "https://rebeltattoos.vercel.app" });
+  const request = (origin, fetchSite) => {
+    const form = validBookingForm();
+    form.set("phone", "");
+    return new Request("https://rebel-tattoos-accra.hz5ycts27d.chatgpt.site/api/bookings", {
+      method: "POST",
+      headers: { Origin: origin, "Sec-Fetch-Site": fetchSite },
+      body: form,
+    });
+  };
+
+  const sameOrigin = await api.fetch(request("https://rebeltattoos.vercel.app", "same-origin"), env);
+  assert.equal(sameOrigin.status, 422);
+  assert.match((await sameOrigin.json()).fields.phone, /phone number/i);
+
+  const foreignOrigin = await api.fetch(request("https://attacker.example.test", "cross-site"), env);
+  assert.equal(foreignOrigin.status, 403);
+  assert.equal(state.createdBookings.length, 0);
+});
+
 test("returns a JSON 404 for an unknown API route without consulting static assets", async () => {
   let assetCalls = 0;
   const api = createWorker();

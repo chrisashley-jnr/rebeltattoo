@@ -18,17 +18,17 @@ const contactChannels = [
   {
     icon: PhoneCall,
     label: "Phone / Mobile",
-    value: "+233 24 000 1027",
+    value: "0554043710",
     subtext: "Call or message for quick inquiries & consultations",
-    href: "tel:+233240001027",
+    href: "tel:+233554043710",
     actionLabel: "Call now",
   },
   {
     icon: WhatsappLogo,
     label: "WhatsApp",
-    value: "+233 24 000 1027",
+    value: "0554043710",
     subtext: "Fastest response for questions & idea discussions",
-    href: "https://wa.me/233240001027?text=Hi%20Michelle,%20I'd%20like%20to%20inquire%20about%20a%20home%20service%20tattoo.",
+    href: "https://wa.me/233554043710?text=Hi%20Michelle,%20I'd%20like%20to%20inquire%20about%20a%20home%20service%20tattoo.",
     actionLabel: "Chat on WhatsApp",
     isPrimary: true,
   },
@@ -62,7 +62,7 @@ const socialChannels = [
     handle: "Rebel Tattoos Updates",
     description: "New booking openings & seasonal availability",
     icon: WhatsappLogo,
-    url: "https://wa.me/233240001027",
+    url: "https://wa.me/233554043710",
   },
 ];
 
@@ -96,7 +96,7 @@ export function ContactPage() {
                 <ButtonLink to="/booking">Book a home session</ButtonLink>
                 <a
                   className="button button--outline"
-                  href="https://wa.me/233240001027"
+                  href="https://wa.me/233554043710"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
